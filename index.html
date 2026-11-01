@@ -100,7 +100,7 @@ svg.map text{font-family:var(--body);fill:var(--paper)}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.5</span></h1>
+    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.6</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -225,7 +225,10 @@ const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const SLOTS=["s1","s2","s3","s4"];
 let sb=null,chan=null,gameId=null;
 let role=null;              // "narr" | "player" | null
-let TOKEN=null,CODE=null;
+let TOKEN=null,CODES={},MY={},ACT=null;
+let DEV=null;const DEVS={};
+function saveCodes(){lsSet("4agoo-codes",JSON.stringify(CODES));lsSet("4agoo-code",null);}
+function anyCode(){return CODES[ACT]||Object.values(CODES)[0];}
 let isNarr=false,mode="landing",readOnly=false;
 let S=null,CH={},MINE=null,RAWLOG=[],ONLINE=new Set();
 let tab="luogo",landingErr="",busyMsg="";
@@ -259,16 +262,31 @@ async function refetch(){
     if(role==="narr"&&TOKEN){
       const d=await rpc("narr_get",{p_token:TOKEN});if(pending)return;
       S=merge(freshState(),d.state||{});CH=d.chars||{};RAWLOG=d.log||[];LIB=merge({locs:{}},d.lib||{});setGame(d.game_id);
-    }else if(role==="player"&&CODE){
-      const d=await rpc("player_get",{p_code:CODE});if(pending)return;
-      S=merge(freshState(),d.state||{});MINE={...d.data,slot:d.slot};setTimeout(trackMe,0);if(!rollForm._init){rollForm._init=1;rollForm.mod=classBonus(MINE);}RAWLOG=d.log||[];setGame(d.game_id);
+    }else if(role==="player"&&Object.keys(CODES).length){
+      const res={},add={};let gid=null,st=null,log=null;
+      for(const [slot,code] of Object.entries({...CODES})){
+        try{const d=await rpc("player_get",{p_code:code});
+          if(gid&&d.game_id!==gid){delete CODES[slot];continue;}
+          gid=d.game_id;st=d.state;log=d.log;res[d.slot]={...d.data,slot:d.slot};
+          if(d.slot!==slot){delete CODES[slot];CODES[d.slot]=code;}
+          (d.linked||[]).forEach(l=>{if(CODES[l.slot]!==l.code)add[l.slot]=l.code;});
+        }catch(e){if(/non valido/.test(String(e&&e.message||"")))delete CODES[slot];else throw e;}
+      }
+      if(pending)return;
+      if(!gid){CODES={};saveCodes();landingErr=Object.keys(MY).length?"I tuoi personaggi non sono più in gioco: chiedi un nuovo codice al Narratore.":"Codice non valido. Ricontrollalo con il Narratore.";
+        MY={};MINE=null;role=null;isNarr=false;mode="landing";S=null;leaveGame();render();return;}
+      const grew=Object.keys(add).length>0;Object.assign(CODES,add);saveCodes();
+      S=merge(freshState(),st||{});MY=res;if(!MY[ACT])ACT=Object.keys(MY)[0];MINE=MY[ACT];RAWLOG=log||[];
+      if(!rollForm._init){rollForm._init=1;rollForm.who=ACT;rollForm.mod=classBonus(MINE);}
+      setGame(gid);setTimeout(()=>{trackMe();sayHere();},0);
+      if(grew){busyMsg="Il Narratore ti ha assegnato un altro personaggio.";setTimeout(()=>{busyMsg="";render();},4000);refetchSoon(0);}
     }
     showConn();mode="ready";
   }catch(e){
     const msg=String(e&&e.message||"");
     if(/non valido/.test(msg)){
       if(role==="narr"){lsSet("4agoo-narr",null);TOKEN=null;landingErr="Codice Narratore non valido.";}
-      else{lsSet("4agoo-code",null);CODE=null;landingErr=MINE?"Il tuo personaggio non è più in gioco: chiedi un nuovo codice al Narratore.":"Codice non valido. Ricontrollalo con il Narratore.";MINE=null;}
+      else{CODES={};saveCodes();landingErr="Codice non valido. Ricontrollalo con il Narratore.";MINE=null;MY={};}
       role=null;isNarr=false;mode="landing";S=null;leaveGame();
     }else conn("connessione persa","dead");
   }
@@ -279,19 +297,23 @@ function setGame(id){
   leaveGame();gameId=id;
   chan=sb.channel("g-"+id,{config:{broadcast:{self:false},presence:{key:role==="player"?("p-"+uid()):"narr"}}});
   chan.on("broadcast",{event:"ping"},()=>refetchSoon())
-      .on("broadcast",{event:"here"},m=>{const s=m&&m.payload&&m.payload.slot;if(s&&isNarr){const was=isOnline(s);SEEN[s]=Date.now();if(!was)render();}})
+      .on("broadcast",{event:"here"},m=>{const p=m&&m.payload||{};const ss=Array.isArray(p.slots)?p.slots:(p.slot?[p.slot]:[]);if(!isNarr||!ss.length)return;
+        const was=ss.every(isOnline)&&p.dev&&DEVS[p.dev];ss.forEach(s=>SEEN[s]=Date.now());noteDev(p.dev,ss);if(!was)render();})
       .on("broadcast",{event:"who"},()=>{if(role==="player")sayHere();})
-      .on("presence",{event:"sync"},()=>{const st=chan.presenceState();ONLINE=new Set();Object.values(st).forEach(arr=>arr.forEach(m=>{if(m.slot)ONLINE.add(m.slot);}));if(isNarr)render();})
+      .on("presence",{event:"sync"},()=>{const st=chan.presenceState();ONLINE=new Set();Object.values(st).forEach(arr=>arr.forEach(m=>{const ss=Array.isArray(m.slots)?m.slots:(m.slot?[m.slot]:[]);ss.forEach(s=>ONLINE.add(s));noteDev(m.dev,ss);}));if(isNarr)render();})
       .subscribe(status=>{RT=status;if(status==="SUBSCRIBED"){tracked=null;trackMe();sayHere();if(isNarr)chan.send({type:"broadcast",event:"who",payload:{}}).catch(()=>{});}showConn();});
 }
 let tracked=null,RT="";const SEEN={};
 // fallback heartbeat over broadcast, in case presence is unavailable: players announce themselves on join, on request and every 25 s
-function sayHere(){if(chan&&role==="player"&&MINE&&RT==="SUBSCRIBED")chan.send({type:"broadcast",event:"here",payload:{slot:MINE.slot}}).catch(()=>{});}
+function mySlots(){return Object.keys(MY).sort();}
+function sayHere(){if(chan&&role==="player"&&mySlots().length&&RT==="SUBSCRIBED")chan.send({type:"broadcast",event:"here",payload:{slots:mySlots(),dev:DEV}}).catch(()=>{});}
+function noteDev(dev,slots){if(!dev||!Array.isArray(slots))return;DEVS[dev]={slots:slots.filter(s=>SLOTS.includes(s)),ts:Date.now()};}
+function presentDevs(){return Object.entries(DEVS).filter(([,d])=>Date.now()-d.ts<60000&&d.slots.length);}
 function isOnline(slot){return ONLINE.has(slot)||(SEEN[slot]&&Date.now()-SEEN[slot]<60000);}
 setInterval(sayHere,25000);
 function showConn(){if(!role)return;if(RT==="SUBSCRIBED")conn("in tempo reale","me");else conn("aggiornamento ogni 15 s","");}
 // announce this player once per connection (re-sent only if the slot changes): repeated track() calls hit Supabase's presence rate limit
-function trackMe(){if(!chan||role!=="player"||!MINE||tracked===MINE.slot)return;tracked=MINE.slot;chan.track({slot:MINE.slot}).catch(()=>{tracked=null;});}
+function trackMe(){const k=mySlots().join(",");if(!chan||role!=="player"||!k||tracked===k)return;tracked=k;chan.track({slots:mySlots(),dev:DEV}).catch(()=>{tracked=null;});}
 function leaveGame(){tracked=null;RT="";if(chan){try{sb.removeChannel(chan);}catch(e){}chan=null;}gameId=null;ONLINE=new Set();}
 
 /* local-first writes */
@@ -299,18 +321,18 @@ function upd(patch){
   S=merge(S,patch);render();
   if(role==="narr")q(()=>rpc("narr_set_state",{p_token:TOKEN,p_patch:patch,p_replace:false}));
   else{const f={};["last","xp","minions","foes"].forEach(k=>{if(k in patch)f[k]=patch[k];});if(patch.combat&&patch.combat.cres)f.cres=patch.combat.cres;
-    if(Object.keys(f).length)q(()=>rpc("player_set_state",{p_code:CODE,p_patch:f}));}
+    if(Object.keys(f).length)q(()=>rpc("player_set_state",{p_code:anyCode(),p_patch:f}));}
 }
-function invOf(slot){if(!isNarr)return MINE&&MINE.slot===slot?MINE:null;return CH[slot]&&CH[slot].data&&CH[slot].data.cls?CH[slot].data:null;}
+function invOf(slot){if(!isNarr)return MY[slot]||null;return CH[slot]&&CH[slot].data&&CH[slot].data.cls?CH[slot].data:null;}
 function invUpd(slot,patch){
-  if(!isNarr){MINE=merge(MINE,patch);render();q(()=>rpc("player_set_char",{p_code:CODE,p_patch:patch}));return;}
+  if(!isNarr){if(!MY[slot])return;MY[slot]=merge(MY[slot],patch);if(slot===ACT)MINE=MY[slot];render();const code=CODES[slot];q(()=>rpc("player_set_char",{p_code:code,p_patch:patch}));return;}
   CH[slot]={...CH[slot],data:merge(CH[slot].data,patch)};render();
   q(()=>rpc("narr_set_char",{p_token:TOKEN,p_slot:slot,p_patch:patch}));
 }
 function addLog(text,who){
   const e={g:S.gid,ts:Date.now(),who:who||"",text};RAWLOG=[e,...RAWLOG];render();
   if(role==="narr")q(()=>rpc("narr_log",{p_token:TOKEN,p_who:who||"",p_text:text,p_gid:S.gid}));
-  else q(()=>rpc("player_log",{p_code:CODE,p_who:who||"",p_text:text}));
+  else q(()=>rpc("player_log",{p_code:anyCode(),p_who:who||"",p_text:text}));
 }
 function myLabel(){return MINE?CL[MINE.cls].n:"";}
 
@@ -322,10 +344,18 @@ const A={
     catch(e){landingErr="Non riesco a creare la partita. Riprova tra poco: se il progetto è in pausa va riattivato dalla dashboard di Supabase.";}
     busyMsg="";tab="luogo";render();},
   narrLogin(){const t=($("#ntok").value||"").trim().toLowerCase();if(!t)return;TOKEN=t;lsSet("4agoo-narr",t);role="narr";isNarr=true;landingErr="";mode="loading";render();refetch();},
-  playerLogin(){const c=($("#pcode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<4)return;CODE=c;lsSet("4agoo-code",c);role="player";isNarr=false;landingErr="";mode="loading";tab="pg";render();refetch();},
+  playerLogin(){const c=($("#pcode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<4)return;CODES={"?":c};saveCodes();MY={};ACT=null;role="player";isNarr=false;landingErr="";mode="loading";tab="pg";render();refetch();},
   logout(){modal={title:"Uscire da questo dispositivo?",text:isNarr?"Per rientrare come Narratore ti servirà il codice Narratore: copialo prima di uscire. La partita resta salvata.":"Per rientrare ti servirà di nuovo il codice del tuo personaggio.",ok:"Esci",fn:()=>{
-    if(isNarr){lsSet("4agoo-narr",null);TOKEN=null;}else{lsSet("4agoo-code",null);CODE=null;}
-    role=null;isNarr=false;S=null;MINE=null;CH={};mode="landing";leaveGame();}};render();},
+    if(isNarr){lsSet("4agoo-narr",null);TOKEN=null;}else{CODES={};saveCodes();}
+    role=null;isNarr=false;S=null;MINE=null;MY={};ACT=null;CH={};mode="landing";leaveGame();}};render();},
+  async addCode(){const c=($("#addcode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<4)return;
+    try{const d=await rpc("player_get",{p_code:c});if(d.game_id!==gameId){busyMsg="Quel codice è di un'altra partita.";render();return;}
+      CODES[d.slot]=c;saveCodes();ACT=d.slot;tab="c-"+d.slot;busyMsg="";refetchSoon(0);}
+    catch(e){busyMsg="Codice non valido.";render();}
+    setTimeout(()=>{if(busyMsg){busyMsg="";render();}},4000);},
+  assign(slot,owner){if(!isNarr||!CH[slot])return;const o=owner||null;CH[slot]={...CH[slot],owner:o};render();
+    q(()=>rpc("narr_assign",{p_token:TOKEN,p_slot:slot,p_owner:o}));
+    const nm=CL[CH[slot].data.cls].n;addLog(o?`${nm} è affidato al giocatore di ${CL[CH[o].data.cls].n}.`:`${nm} non è più affidato a nessuno.`);},
   copyToken(){try{navigator.clipboard.writeText(TOKEN).then(()=>{busyMsg="Codice copiato";render();setTimeout(()=>{busyMsg="";render();},1500);});}catch(e){}},
   copyLink(slot){const u=location.origin+location.pathname+"?codice="+CH[slot].code;try{navigator.clipboard.writeText(u).then(()=>{busyMsg="Link copiato: "+u;render();setTimeout(()=>{busyMsg="";render();},3000);});}catch(e){busyMsg=u;render();}},
   newGame(){modal={title:"Chiudere la partita?",text:"La partita in corso termina per tutti: personaggi, codici dei giocatori, giorni, indizi e diario ripartono da zero. Il tuo codice Narratore resta lo stesso.",ok:"Chiudi e ricomincia",fn:()=>{
@@ -384,12 +414,12 @@ function members(){
   const out=[];
   if(isNarr){SLOTS.forEach(k=>{const s=invOf(k);if(s)out.push({id:k,label:CL[s.cls].n,s});});
     Object.entries(S.hel).forEach(([k,h])=>{if(h)out.push({id:k,label:h.name,h});});}
-  else if(MINE)out.push({id:MINE.slot,label:CL[MINE.cls].n,s:MINE});
+  else Object.values(MY).forEach(s=>out.push({id:s.slot,label:CL[s.cls].n,s}));
   return out;
 }
 async function doRoll(){try{await doRoll2();}catch(e){}}
 async function doRoll2(){
-  const f=rollForm;const ms=members();const m=isNarr?ms.find(x=>x.id===f.who):ms[0];const who=m?m.label:"Narratore";
+  const f=rollForm;const ms=members();const m=isNarr?ms.find(x=>x.id===f.who):(ms.find(x=>x.id===f.who)||ms[0]);const who=m?m.label:"Narratore";
   let total,dice,res="",text="";
   if(f.mode==="libero"){
     const n={d6:1,"2d6":2,"3d6":3,d3:1,d2:1}[f.expr];dice=[];
@@ -425,9 +455,11 @@ function render(){
       html=({luogo:viewLocation,gruppo:viewNarrGroup,dadi:viewDice,combatt:()=>combatGuide()+viewCombat(),mappa:viewMap,diario:viewLog}[tab])();}
   }else{
     if(S.phase!=="play"||!MINE)html=`<div class="card"><h2>In attesa del Narratore</h2><p class="muted">La partita non è ancora cominciata.</p></div>`;
-    else{tabs=[["pg","Il mio personaggio"],["dadi","Dadi"],["tavolo","Tavolo"],["diario","Diario"]];
-      if(!tabs.some(t=>t[0]===tab))tab="pg";
-      html=({pg:()=>myDefenses()+viewMine(),dadi:()=>myDefenses()+viewDice(),tavolo:viewTable,diario:viewLog}[tab])();}
+    else{const mine=mySlots().map(k=>["c-"+k,CL[MY[k].cls].n]);
+      tabs=[...mine,["dadi","Dadi"],["tavolo","Tavolo"],["diario","Diario"]];
+      if(tab==="pg"||!tabs.some(t=>t[0]===tab))tab="c-"+ACT;
+      if(tab.startsWith("c-")){ACT=tab.slice(2);MINE=MY[ACT];}
+      html=tab.startsWith("c-")?myDefenses()+viewMine():({dadi:()=>myDefenses()+viewDice(),tavolo:viewTable,diario:viewLog}[tab])();}
   }
   $("#tabs").innerHTML=tabs.map(([k,n])=>`<button role="tab" aria-selected="${tab===k}" data-a="tab" data-p="${k}">${n}</button>`).join("");
   $("#main").innerHTML=(busyMsg?`<p class="banner">${esc(busyMsg)}</p>`:"")+html;
@@ -763,8 +795,8 @@ function combatGuide(){
 }
 function myDefenses(){
   const c=S.combat||{};if(!c.on||!MINE)return "";const cr=c.cres||{};
-  const mine=Object.entries(c.assign||{}).filter(([,a])=>a&&a.tgt===MINE.slot);if(!mine.length)return "";
-  return `<div class="card" style="border-color:var(--blood)"><h3>Ti stanno attaccando</h3>${mine.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="pri sm" data-a="s1" data-f="defend" data-p="${k}">Difenditi</button>`}</div>`;}).join("")}</div>`;
+  const mine=Object.entries(c.assign||{}).filter(([,a])=>a&&MY[a.tgt]);if(!mine.length)return "";const many=mySlots().length>1;
+  return `<div class="card" style="border-color:var(--blood)"><h3>Ti stanno attaccando</h3>${mine.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${many?`<b>${esc(a.tname)}</b> ← `:""}${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="pri sm" data-a="s1" data-f="defend" data-p="${k}">Difenditi</button>`}</div>`;}).join("")}</div>`;
 }
 
 function classOptions(sel,slot,source){
@@ -804,10 +836,13 @@ function viewNarrGroup(){
   const cards=SLOTS.map(k=>{
     const sl=CH[k];const s=sl&&sl.data;
     if(!s||!s.cls)return `<div class="card"><h3>Posto libero</h3><label for="add-${k}">Recluta un investigatore<select id="add-${k}" data-ch="addInv" data-p="${k}">${classOptions("",k,x=>CH[x]&&CH[x].data&&CH[x].data.cls)}</select></label><p class="muted">Reclutare un investigatore costa 2 giorni. Riceverà un codice nuovo.</p></div>`;
-    const on=isOnline(k);
+    const on=isOnline(k);const own=sl.owner&&CH[sl.owner]&&CH[sl.owner].data?CL[CH[sl.owner].data.cls].n:"";
+    const devs=presentDevs().filter(([,d])=>!d.slots.includes(k));
     return `<div class="card">
       <div class="row sb"><h3>${CL[s.cls].n} <span class="num muted">L${s.lvl}</span></h3>
         <span class="stat">Codice <b class="ok" style="font-size:20px;letter-spacing:.12em">${esc(sl.code)}</b></span></div>
+      ${own?`<div class="row"><span class="chip me">affidato al giocatore di ${esc(own)}</span><button class="sm" data-a="unassign" data-p="${k}">Togli</button></div>`:""}
+      ${!on&&!own&&devs.length?`<label for="as-${k}">Assegna a un giocatore presente<select id="as-${k}" data-ch="assign" data-p="${k}"><option value="">— scegli —</option>${devs.map(([,d])=>`<option value="${d.slots[0]}">${esc(d.slots.map(s=>CH[s]&&CH[s].data?CL[CH[s].data.cls].n:s).join(" + "))}</option>`).join("")}</select></label>`:""}
       <div class="row">${on?`<span class="chip me">giocatore collegato</span>`:`<span class="chip">giocatore non collegato</span>`}
         <button class="sm" data-a="copyLink" data-p="${k}">Copia link</button><button class="sm" data-a="newCodeFor" data-p="${k}">Nuovo codice</button><button class="sm danger" data-a="removeInv" data-p="${k}">Rimuovi</button></div>
       ${sheet(k,s)}</div>`;}).join("");
@@ -836,6 +871,8 @@ function cluesCard(ctl){
 function viewCodeEntry(){return "";}
 function viewMine(){
   return `<div class="card"><div class="row sb"><h2>${CL[MINE.cls].n} <span class="num muted">L${MINE.lvl}</span></h2><span class="chip me">solo tu vedi questa scheda</span></div>${sheet(MINE.slot,MINE)}</div>
+  <div class="card"><h3>Controlli anche un altro personaggio?</h3><p class="muted">Il Narratore può affidartelo dalla sua pagina, oppure puoi inserire qui il suo codice.</p>
+    <div class="row"><input id="addcode" maxlength="8" autocomplete="off" autocapitalize="characters" aria-label="Codice di un altro personaggio" placeholder="CODICE" style="flex:1;font-family:var(--mono);letter-spacing:.15em;text-transform:uppercase"><button data-a="addCode">Aggiungi</button></div></div>
   <p class="muted">Gli altri giocatori non vedono la tua Vita, la tua Sanità né il tuo equipaggiamento. Se vuoi che lo sappiano, diglielo.</p>`;
 }
 function viewTable(){
@@ -846,7 +883,7 @@ function viewTable(){
   <div class="card"><h2>Mappa</h2>${mapSvg(null)}</div>`;
 }
 function viewDice(){
-  const f=rollForm;const ms=members();const m=isNarr?ms.find(x=>x.id===f.who):ms[0];
+  const f=rollForm;const ms=members();const m=isNarr?ms.find(x=>x.id===f.who):(ms.find(x=>x.id===f.who)||ms[0]);
   let hint="";
   if(m&&m.s){const b=classBonus(m.s),L=m.s.lvl,c=m.s.cls;
     hint=[b?`bonus di classe +${b} agli attacchi`:"",c==="medium"?`+${L} contro i non-morti`:"",c==="spia"?`+${L} contro gli umani`:"",c==="professore"?`+${L} ai test di Sapere`:"",
@@ -856,7 +893,7 @@ function viewDice(){
   const modes=[["attacco","Attacco"],["difesa","Difesa"],["sanita","Test di Sanità"],["sapere","Test di Sapere"],["occulto","Test di Occulto"],["libero","Tiro libero"]];
   const ck=(id,k,lab)=>`<label style="flex-direction:row;align-items:center;gap:6px" for="${id}"><input id="${id}" type="checkbox" style="width:auto;min-height:0" data-rf="${k}" ${f[k]?"checked":""}> ${lab}</label>`;
   return `<div class="card"><h2>Tira i dadi</h2><p class="muted">Ogni tiro compare in alto e nel diario di tutti. I 6 esplodono nelle azioni dei personaggi.</p>
-    <div class="f">${isNarr?`<label for="rWho">Chi tira<select id="rWho" data-rf="who"><option value="">Narratore / nessuno</option>${ms.map(x=>`<option value="${x.id}" ${f.who===x.id?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>`:`<label>Chi tira<input value="${esc(m?m.label:"")}" disabled></label>`}
+    <div class="f">${isNarr||ms.length>1?`<label for="rWho">Chi tira<select id="rWho" data-rf="who">${isNarr?`<option value="">Narratore / nessuno</option>`:""}${ms.map(x=>`<option value="${x.id}" ${(m&&m.id===x.id)?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>`:`<label>Chi tira<input value="${esc(m?m.label:"")}" disabled></label>`}
       <label for="rMode">Tipo<select id="rMode" data-rf="mode">${modes.map(([k,n])=>`<option value="${k}" ${f.mode===k?"selected":""}>${n}</option>`).join("")}</select></label></div>
     ${hint?`<p class="muted">${esc(hint)}</p>`:""}
     ${f.mode==="libero"?`<div class="f"><label for="rExpr">Dadi<select id="rExpr" data-rf="expr">${["d6","2d6","3d6","d3","d2"].map(x=>`<option ${f.expr===x?"selected":""}>${x}</option>`).join("")}</select></label>
@@ -923,7 +960,7 @@ function viewLog(){
 
 /* ---------- events ---------- */
 const OPEN_OK=new Set(["createGame","narrLogin","playerLogin","logout","modalOk","modalNo","tab"]);
-const PLAYER_OK=new Set(["stat","ctr","levelUp","roll","note","target","classMod"]);
+const PLAYER_OK=new Set(["addCode","stat","ctr","levelUp","roll","note","target","classMod"]);
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-a]");if(!t||t.tagName==="SELECT")return;
   const a=t.dataset.a,p=t.dataset.p,d=+t.dataset.d;
@@ -931,13 +968,13 @@ document.addEventListener("click",e=>{
   if(diceReq)return;
   if(a==="s1"){const f=t.dataset.f,k=t.dataset.k;if(!role||!S1[f])return;
     if(!isNarr){if(!["defend","dropArm","addArmManual"].includes(f))return;
-      if(f==="defend"){const as=S.combat&&S.combat.assign&&S.combat.assign[p];if(!as||!MINE||as.tgt!==MINE.slot)return;}
-      else if(!MINE||p!==MINE.slot)return;}
+      if(f==="defend"){const as=S.combat&&S.combat.assign&&S.combat.assign[p];if(!as||!MY[as.tgt])return;}
+      else if(!MY[p])return;}
     S1[f](p,k);return;}
   if(!OPEN_OK.has(a)){
     if(!role)return;
     if(!isNarr&&!PLAYER_OK.has(a))return;
-    if(!isNarr&&["stat","ctr","levelUp"].includes(a)&&(!MINE||MINE.slot!==p))return;
+    if(!isNarr&&["stat","ctr","levelUp"].includes(a)&&!MY[p])return;
   }
   switch(a){
     case "stat":A.stat(p,t.dataset.f,d);break;
@@ -949,18 +986,20 @@ document.addEventListener("click",e=>{
     case "check":A.check(p,t.dataset.k);break;
     case "minion":A.minion(+p);break;
     case "xp":A.xp(+p);break;
+    case "unassign":A.assign(p,null);break;
     case "target":{const x=S.foes[p];rollForm.target=x.L;rollForm.inc=!!x.inc;render();break;}
-    case "classMod":{const ms=members();const m=isNarr?ms.find(x=>x.id===rollForm.who):ms[0];if(m&&m.s){rollForm.mod=classBonus(m.s);render();}break;}
+    case "classMod":{const ms=members();const m=ms.find(x=>x.id===rollForm.who)||(isNarr?null:ms[0]);if(m&&m.s){rollForm.mod=classBonus(m.s);render();}break;}
     default:if(A[a])A[a](p);
   }
 });
 document.addEventListener("change",e=>{
   const t=e.target,p=t.dataset.p;if(!role)return;
   if(t.dataset.le&&locEdit){if(t.dataset.le==="min"||t.dataset.le==="max")render();return;}
-  if(t.dataset.tx){if(!isNarr&&(!MINE||MINE.slot!==p))return;invUpd(p,{[t.dataset.tx]:t.value});return;}
+  if(t.dataset.tx){if(!isNarr&&!MY[p])return;invUpd(p,{[t.dataset.tx]:t.value});return;}
   if(!isNarr)return;
   if(t.dataset.ch==="roster"){A.pickRoster(p,t.value);return;}
   if(t.dataset.ch==="addInv"){A.addInv(p,t.value);return;}
+  if(t.dataset.ch==="assign"){if(t.value)A.assign(p,t.value);return;}
   if(t.dataset.htx){upd({hel:{[p]:{[t.dataset.htx]:t.value}}});return;}
   if(t.dataset.hnum){const v=Math.max(0,+t.value||0),f=t.dataset.hnum,cur=f==="lmax"?"life":"san";upd({hel:{[p]:{[f]:v,[cur]:Math.min(S.hel[p][cur],v)}}});return;}
   if(t.dataset.gtx){upd({[t.dataset.gtx]:t.value});}
@@ -972,7 +1011,7 @@ document.addEventListener("input",e=>{
   if(t.dataset.s1v){if(t.dataset.s1v==="invMod")invMod=+t.value||0;else sanDiff=+t.value||4;return;}
   if(!t.dataset.rf)return;const k=t.dataset.rf;rollForm[k]=t.type==="checkbox"?t.checked:t.value;
   if(k==="fid"){const x=S.foes[t.value];if(x){rollForm.target=x.L;rollForm.inc=!!x.inc;}render();return;}
-  if(k==="who"||k==="mode"){rollForm.weapon="0";const ms=members();const m=isNarr?ms.find(x=>x.id===rollForm.who):ms[0];rollForm.mod=rollForm.mode==="attacco"&&m?(m.s?classBonus(m.s):(+m.h.atk||0)):0;render();}
+  if(k==="who"||k==="mode"){rollForm.weapon="0";const ms=members();const m=ms.find(x=>x.id===rollForm.who)||(isNarr?null:ms[0]);rollForm.mod=rollForm.mode==="attacco"&&m?(m.s?classBonus(m.s):(+m.h.atk||0)):0;render();}
 });
 document.addEventListener("keydown",e=>{
   if(diceReq&&!diceReq.other&&/^[1-9]$/.test(e.key)){diceKey("dk",e.key);return;}
@@ -981,6 +1020,7 @@ document.addEventListener("keydown",e=>{
   if(id==="dkIn"){e.preventDefault();diceKey("dkOk");return;}
   if(id==="lognote"){e.preventDefault();A.note();}
   if(id==="pcode"){e.preventDefault();A.playerLogin();}
+  if(id==="addcode"){e.preventDefault();A.addCode();}
   if(id==="ntok"){e.preventDefault();A.narrLogin();}
 });
 
@@ -991,10 +1031,13 @@ function conn(txt,cls){$("#conn").textContent=txt;$("#conn").className="chip "+(
   sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
   // a ?codice=XXXXXX link opens straight into the player's sheet
   const qs=new URLSearchParams(location.search);const qc=(qs.get("codice")||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
-  TOKEN=lsGet("4agoo-narr");CODE=qc||lsGet("4agoo-code");
-  if(qc){lsSet("4agoo-code",qc);TOKEN=null;}
+  DEV=lsGet("4agoo-dev");if(!DEV){DEV=uid()+uid();lsSet("4agoo-dev",DEV);}
+  TOKEN=lsGet("4agoo-narr");
+  try{CODES=JSON.parse(lsGet("4agoo-codes")||"{}")||{};}catch(e){CODES={};}
+  const legacy=lsGet("4agoo-code");if(legacy&&!Object.keys(CODES).length)CODES={"?":legacy};
+  if(qc){if(!Object.values(CODES).includes(qc))CODES={"?":qc};saveCodes();TOKEN=null;}
   if(TOKEN){role="narr";isNarr=true;mode="loading";}
-  else if(CODE){role="player";isNarr=false;mode="loading";tab="pg";}
+  else if(Object.keys(CODES).length){role="player";isNarr=false;mode="loading";tab="pg";}
   conn(role?"connessione…":"pronto","");
   render();if(role)refetch();
   setInterval(()=>{if(role&&document.visibilityState==="visible")refetchSoon(0);},15000);

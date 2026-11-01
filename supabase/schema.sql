@@ -209,3 +209,8 @@ grant execute on function public.create_game(jsonb), public.narr_get(text), publ
 alter table public.games add column if not exists lib jsonb not null default '{}'::jsonb;
 -- narr_get also returns 'lib'; narr_set_lib(p_token, p_patch) deep-merges into lib (narrator only).
 -- player_set_state accepts: last, xp, minions, foes.{id}.n, cres (own defense results stored under combat.cres).
+
+-- ===== multi-character devices (migration "tavolo_multi_char") =====
+alter table public.chars add column if not exists owner text;
+-- narr_assign(p_token, p_slot, p_owner): the device playing p_owner also controls p_slot (null removes the link).
+-- player_get returns 'linked': [{slot, code}] for characters owned by the caller's slot; narr_get returns 'owner' per character.
