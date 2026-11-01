@@ -189,7 +189,7 @@ let role=null;              // "narr" | "player" | null
 let TOKEN=null,CODE=null;
 let isNarr=false,mode="landing",readOnly=false;
 let S=null,CH={},MINE=null,RAWLOG=[],ONLINE=new Set();
-let tab="gruppo",landingErr="",busyMsg="";
+let tab="luogo",landingErr="",busyMsg="";
 let rollForm={who:"",mode:"attacco",mod:0,target:4,inc:false,expr:"d6",ex:true,weapon:0};
 let travelTo=null,pilotOn=null,modal=null;
 let chain=Promise.resolve(),pending=0,refetchT=null;
@@ -200,10 +200,10 @@ function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(
 function freshState(){
   return {gid:uid(),phase:"setup",day:0,loc:"",final:false,minions:0,xp:0,
     clues:{c1:null,c2:null,c3:null},roster:{s1:null,s2:null,s3:null,s4:null},
-    hel:{},foes:{},checks:{},notes:"",last:null};
+    hel:{},foes:{},checks:{},recUsed:{},tomorrow:null,enc:null,combat:{on:false,helpers:{}},notes:"",last:null};
 }
 function newInv(cls){const c=CL[cls];const used={};c.ctr.forEach(x=>used[x.k]=0);
-  return {cls,lvl:1,life:c.L+1,san:c.S+1,weap:c.w,items:"",spells:"",notes:"",used};}
+  return {cls,lvl:1,life:c.L+1,san:c.S+1,arms:(ARMS[cls]||[]).map(a=>mkArm(a[0],a[1],a[2])),items:"",spells:"",notes:"",used};}
 
 /* ---------- backend calls ---------- */
 async function rpc(fn,args){const {data,error}=await sb.rpc(fn,args);if(error)throw error;return data;}
@@ -219,7 +219,7 @@ async function refetch(){
   try{
     if(role==="narr"&&TOKEN){
       const d=await rpc("narr_get",{p_token:TOKEN});if(pending)return;
-      S=merge(freshState(),d.state||{});CH=d.chars||{};RAWLOG=d.log||[];setGame(d.game_id);
+      S=merge(freshState(),d.state||{});CH=d.chars||{};RAWLOG=d.log||[];LIB=merge({locs:{}},d.lib||{});setGame(d.game_id);
     }else if(role==="player"&&CODE){
       const d=await rpc("player_get",{p_code:CODE});if(pending)return;
       S=merge(freshState(),d.state||{});MINE={...d.data,slot:d.slot};if(!rollForm._init){rollForm._init=1;rollForm.mod=classBonus(MINE);}RAWLOG=d.log||[];setGame(d.game_id);
@@ -250,7 +250,8 @@ function leaveGame(){if(chan){try{sb.removeChannel(chan);}catch(e){}chan=null;}g
 function upd(patch){
   S=merge(S,patch);render();
   if(role==="narr")q(()=>rpc("narr_set_state",{p_token:TOKEN,p_patch:patch,p_replace:false}));
-  else{const f={};if("last" in patch)f.last=patch.last;if("xp" in patch)f.xp=patch.xp;if(Object.keys(f).length)q(()=>rpc("player_set_state",{p_code:CODE,p_patch:f}));}
+  else{const f={};["last","xp","minions","foes"].forEach(k=>{if(k in patch)f[k]=patch[k];});if(patch.combat&&patch.combat.cres)f.cres=patch.combat.cres;
+    if(Object.keys(f).length)q(()=>rpc("player_set_state",{p_code:CODE,p_patch:f}));}
 }
 function invOf(slot){if(!isNarr)return MINE&&MINE.slot===slot?MINE:null;return CH[slot]&&CH[slot].data&&CH[slot].data.cls?CH[slot].data:null;}
 function invUpd(slot,patch){
@@ -271,7 +272,7 @@ const A={
   async createGame(){busyMsg="Creo la partita…";render();
     try{const st=freshState();const d=await rpc("create_game",{p_state:st});TOKEN=d.token;lsSet("4agoo-narr",TOKEN);role="narr";isNarr=true;S=st;CH={};mode="ready";setGame(d.game_id);}
     catch(e){landingErr="Non riesco a creare la partita. Riprova tra poco: se il progetto è in pausa va riattivato dalla dashboard di Supabase.";}
-    busyMsg="";tab="gruppo";render();},
+    busyMsg="";tab="luogo";render();},
   narrLogin(){const t=($("#ntok").value||"").trim().toLowerCase();if(!t)return;TOKEN=t;lsSet("4agoo-narr",t);role="narr";isNarr=true;landingErr="";mode="loading";render();refetch();},
   playerLogin(){const c=($("#pcode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<4)return;CODE=c;lsSet("4agoo-code",c);role="player";isNarr=false;landingErr="";mode="loading";tab="pg";render();refetch();},
   logout(){modal={title:"Uscire da questo dispositivo?",text:isNarr?"Per rientrare come Narratore ti servirà il codice Narratore: copialo prima di uscire. La partita resta salvata.":"Per rientrare ti servirà di nuovo il codice del tuo personaggio.",ok:"Esci",fn:()=>{
@@ -317,12 +318,13 @@ const A={
   minion(d){let m=Math.max(0,S.minions+d),xp=S.xp,n=0;while(m>=10){m-=10;xp++;n++;}upd({minions:m,xp});if(n)addLog(`${n*10} minion sconfitti diventano ${n} PE.`);},
   xp(d){upd({xp:Math.max(0,S.xp+d)});},
   addFoe(){const name=$("#fName").value.trim()||"Nemici",L=+$("#fL").value||1,kind=$("#fKind").value,n=Math.max(1,+$("#fN").value||1),inc=$("#fInc").checked;
-    upd({foes:{["f"+uid()]:{name,L,kind,n,n0:n,inc}}});addLog(`Nemici: ${kind==="Boss"?name+" (Boss L"+L+", "+n+" Vita)":n+" × "+name+" (L"+L+")"}${inc?", incorporei":""}.`);},
+    const atk=Math.max(1,+(($("#fAtk")||{}).value)||1),dmg=Math.max(1,+(($("#fDmg")||{}).value)||1);
+    upd({foes:{["f"+uid()]:{name,L,kind,n,n0:n,inc,atk,dmg}}});addLog(`Nemici: ${kind==="Boss"?name+" (Boss L"+L+", "+n+" Vita)":n+" × "+name+" (L"+L+")"}${inc?", incorporei":""}.`);},
   foe(k,d){const f=S.foes[k];const v=Math.max(0,f.n+d);upd({foes:{[k]:{n:v}}});
     if(d<0){if(f.kind==="Minion")A.minion(-d);if(f.kind==="Boss"&&v===0){upd({xp:S.xp+1});addLog(`${f.name} è sconfitto! +1 PE.`);}else if(v===0)addLog(`Tutti i ${f.name} sono sconfitti.`);}},
   delFoe(k){upd({foes:{[k]:null}});},
-  endCombat(){const o={};Object.keys(S.foes).forEach(k=>o[k]=null);upd({foes:o});addLog("Fine del combattimento.");},
-  check(l,i){const v=!(S.checks[l]&&S.checks[l][i]);upd({checks:{[l]:{[i]:v}}});},
+  endCombat(){const o={};Object.keys(S.foes).forEach(k=>o[k]=null);upd({foes:o,combat:{on:false,flee:false,assign:clearMap(S.combat&&S.combat.assign),cres:clearMap(S.combat&&S.combat.cres)}});addLog("Fine del combattimento.");},
+  check(l,i){const L=locData(l);const b=L?Math.max(1,+L.enc[i]||1):1;const v=(usedOf(l,i)+1)%(b+1);upd({checks:{[l]:{[i]:v}}});},
   roll(){doRoll();},
   note(){const el=$("#lognote");const t=el.value.trim();if(!t)return;addLog(t,isNarr?"Narratore":myLabel());el.value="";},
   modalOk(){const f=modal.fn;modal=null;f();render();},
@@ -345,16 +347,17 @@ function doRoll(){
     total=dice.reduce((a,b)=>a+b,0)+(+f.mod||0);text=`Tiro libero ${f.expr}${+f.mod?(f.mod>0?"+":"")+f.mod:""}`;
     if(f.expr==="3d6")res=`alto ${Math.max(...dice)}, basso ${Math.min(...dice)}`;
   }else{
-    dice=f.ex?rollEx():[d6()];const mod=(+f.mod||0)+(f.mode==="attacco"?(+f.weapon||0):0);
+    dice=f.ex?rollEx():[d6()];const wm=m&&m.s?(f.weapon==="u"?-1:((armsOf(m.s)[+f.weapon||0]||{}).mod||0)):(m&&m.h?0:(+f.weapon||0));const mod=(+f.mod||0)+(f.mode==="attacco"?wm:0);
     total=dice.reduce((a,b)=>a+b,0)+mod;const T=Math.max(1,+f.target||1);const ms2=mod>=0?"+"+mod:mod;
     if(f.mode==="attacco"){const hits=Math.floor(total/T);const incOk=m&&m.s&&CL[m.s.cls].inc;const w=f.inc&&!incOk?Math.floor(hits/2):hits;
-      text=`Attacco vs L${T}${f.inc?" incorporeo":""} (${ms2})`;res=hits===0?"Mancato":`${hits} ${hits>1?"colpi":"colpo"} → ${w} ${w===1?"ferita":"ferite"}`;}
+      text=`Attacco vs L${T}${f.inc?" incorporeo":""} (${ms2})`;res=hits===0?"Mancato":`${hits} ${hits>1?"colpi":"colpo"} → ${w} ${w===1?"ferita":"ferite"}`;var _apply=f.fid&&w>0?[f.fid,w]:null;}
     else if(f.mode==="difesa"){text=`Difesa vs L${T} (${ms2})`;res=total>=T?"Schivato":"Colpito";}
     else{text=`Test di ${{sanita:"Sanità",sapere:"Sapere",occulto:"Occulto"}[f.mode]} ${T} (${ms2})`;res=total>=T?"Superato":"Fallito";}
   }
   const ok=/Superato|Schivato/.test(res)||/→ [1-9]/.test(res)?true:/Fallito|Colpito|Mancato|→ 0/.test(res)?false:null;
   upd({last:{who,text,total,res,ok,ts:Date.now()}});
   addLog(`${text}: ${total} [${dice.join("+")}]${res?" — "+res:""}`,who);
+  if(typeof _apply!=="undefined"&&_apply)applyAttack(_apply[0],_apply[1],who);
 }
 
 /* ---------- rendering ---------- */
@@ -367,14 +370,14 @@ function render(){
   else if(mode==="loading"||!S)html=`<div class="card"><p class="muted">Caricamento del tavolo…</p></div>`;
   else if(isNarr){
     if(S.phase==="setup")html=viewSetup();
-    else{tabs=[["gruppo","Gruppo e codici"],["dadi","Dadi"],["combatt","Combattimento"],["mappa","Mappa e giorni"],["diario","Diario"]];
-      if(!tabs.some(t=>t[0]===tab))tab="gruppo";
-      html=({gruppo:viewNarrGroup,dadi:viewDice,combatt:viewCombat,mappa:viewMap,diario:viewLog}[tab])();}
+    else{tabs=[["luogo","Luogo"],["gruppo","Gruppo e codici"],["dadi","Dadi"],["combatt","Combattimento"],["mappa","Mappa e giorni"],["diario","Diario"]];
+      if(!tabs.some(t=>t[0]===tab))tab="luogo";
+      html=({luogo:viewLocation,gruppo:viewNarrGroup,dadi:viewDice,combatt:()=>combatGuide()+viewCombat(),mappa:viewMap,diario:viewLog}[tab])();}
   }else{
     if(S.phase!=="play"||!MINE)html=`<div class="card"><h2>In attesa del Narratore</h2><p class="muted">La partita non è ancora cominciata.</p></div>`;
     else{tabs=[["pg","Il mio personaggio"],["dadi","Dadi"],["tavolo","Tavolo"],["diario","Diario"]];
       if(!tabs.some(t=>t[0]===tab))tab="pg";
-      html=({pg:viewMine,dadi:viewDice,tavolo:viewTable,diario:viewLog}[tab])();}
+      html=({pg:()=>myDefenses()+viewMine(),dadi:()=>myDefenses()+viewDice(),tavolo:viewTable,diario:viewLog}[tab])();}
   }
   $("#tabs").innerHTML=tabs.map(([k,n])=>`<button role="tab" aria-selected="${tab===k}" data-a="tab" data-p="${k}">${n}</button>`).join("");
   $("#main").innerHTML=(busyMsg?`<p class="banner">${esc(busyMsg)}</p>`:"")+html;
@@ -410,6 +413,309 @@ function viewLanding(){
   <p class="muted">Il libro resta in mano al Narratore: qui non ci sono i testi degli incontri. La pagina tiene i conti, tira i dadi e mostra a ogni giocatore solo la sua scheda.</p>`;
 }
 
+/* ================= Stage 1: weapons, locations library, investigate, recruit, equip, guided combat ================= */
+const CAT={N:"Normale",P:"Potente",S:"Speciale",X:"Sperimentale"};
+const CATMOD={N:0,P:1,S:0,X:0};
+const ARMS={
+  occultista:[["Bastone","N"]],medium:[["Coltello","N"]],infermiera:[["Bisturi","N"],["Pistola","P"]],
+  professore:[["Coltello","N"]],spia:[["Coltello","N"],["Pistola","P"]],veterano:[["Baionetta","N"],["Fucile","P"]],
+  gangster:[["Pistola","P"],["Tirapugni","N"],["Tommy Gun","S",3]],detective:[["Pistola","P"],["Tirapugni","N"]]};
+const PREF={occultista:"N",medium:"N",infermiera:"NP",professore:"NX",spia:"NPS",veterano:"NPS",gangster:"NPS",detective:"NPSX"};
+const STUDENT_CITIES=["Boston","Providence","Arkham","New York","St. Louis","San Francisco"];
+let LIB={locs:{}};
+let locEdit=null, equipOpen=false, invMod=0, sanDiff=4, lastSan=null, helperSel=null;
+
+function mkArm(n,c,m){return {name:n,cat:c,mod:m!=null?m:CATMOD[c]};}
+function armsOf(s){return Array.isArray(s.arms)?s.arms:(ARMS[s.cls]||[]).map(a=>mkArm(a[0],a[1],a[2]));}
+function maxArms(s){return s.cls==="gangster"?3:2;}
+function canCarry(s,w){const a=armsOf(s);
+  if(!PREF[s.cls].includes(w.cat))return "categoria non tra le preferite";
+  if(a.some(x=>x.name.toLowerCase()===w.name.toLowerCase()))return "ha già quest'arma";
+  if(a.length>=maxArms(s))return `porta già ${maxArms(s)} armi`;return "";}
+function alive(s){return s&&s.life>0&&s.san>0;}
+function locData(l){return LIB.locs&&LIB.locs[l]||null;}
+function usedOf(l,n){const v=S.checks[l]&&S.checks[l][n];return v===true?1:(+v||0);}
+function recUsed(l,id){return (S.recUsed&&S.recUsed[l]&&S.recUsed[l][id])||0;}
+function helpers(){return Object.entries(S.hel).filter(([,h])=>h&&h.name);}
+function slotsWith(){return SLOTS.filter(k=>invOf(k));}
+function invSlotsAlive(){return SLOTS.filter(k=>alive(invOf(k)));}
+
+/* ---------- location library editor ---------- */
+function blankLoc(){return {min:1,max:6,enc:{1:0,2:0,3:0,4:0,5:0,6:0},note:"",rest:"",rec:[],arms:[]};}
+const S1={
+  editLoc(){const d=locData(S.loc);locEdit=JSON.parse(JSON.stringify(d||blankLoc()));render();},
+  cancelLoc(){locEdit=null;render();},
+  saveLoc(){const e=locEdit;e.min=Math.max(1,+e.min||1);e.max=Math.max(e.min,+e.max||6);
+    const enc={};for(let n=e.min;n<=e.max;n++)enc[n]=Math.max(0,Math.min(3,+e.enc[n]||0));e.enc=enc;
+    e.rec=e.rec.filter(r=>r.kind==="inv"?r.cls:r.name).map(r=>({...r,id:r.id||uid()}));
+    e.arms=e.arms.filter(a=>a.name);
+    LIB=merge(LIB,{locs:{[S.loc]:null}});LIB.locs[S.loc]=e;locEdit=null;render();
+    q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[S.loc]:null}}}));
+    q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[S.loc]:e}}}));},
+  addRec(kind){locEdit.rec.push(kind==="inv"?{kind:"inv",cls:"",days:2,boxes:1,note:""}:{kind:"hel",name:"",min:1,max:1,life:1,san:1,atk:0,days:1,boxes:1,note:""});render();},
+  delRec(i){locEdit.rec.splice(+i,1);render();},
+  addArm(){locEdit.arms.push({name:"",cat:"N",cond:""});render();},
+  delArm(i){locEdit.arms.splice(+i,1);render();},
+
+  /* ---------- investigate ---------- */
+  investigate(){
+    const L=locData(S.loc);if(!L||S.final)return;
+    const newDay=S.day+1;const tm=S.tomorrow&&S.tomorrow.day===newDay&&S.tomorrow.loc===S.loc?(+S.tomorrow.mod||0):0;
+    const mod=(+invMod||0)+tm;
+    const valid=[];for(let n=L.min;n<=L.max;n++){const b=+L.enc[n]||0;if(b===0||usedOf(S.loc,n)<b)valid.push(n);}
+    const sel=helperSel||Object.fromEntries(helpers().map(([k])=>[k,true]));
+    const rolls=[];let res=null;
+    if(valid.length){for(let i=0;i<60;i++){const r=d6();const v=Math.max(L.min,Math.min(L.max,r+mod));rolls.push(r);if(valid.includes(v)){res=v;break;}}}
+    const patch={day:newDay,tomorrow:null,combat:{helpers:sel},enc:{loc:S.loc,n:res,rolls,mod,ts:Date.now()},
+      last:{who:"",text:`Indagine a ${S.loc}`,total:res==null?"—":res,res:res==null?"Nessun evento":`Incontro ${res}`,ts:Date.now()}};
+    if(res!=null&&(+L.enc[res]||0)>0)patch.checks={[S.loc]:{[res]:usedOf(S.loc,res)+1}};
+    upd(patch);
+    const rs=rolls.map(r=>r+(mod?(mod>0?"+":"")+mod:"")).join(", poi ");
+    addLog(res==null?`Indagine a ${S.loc}: nessun evento possibile. Giorno ${newDay}.`:`Indagine a ${S.loc} (giorno ${newDay}): ${rs} → incontro ${res}${rolls.length>1?" (ritirato perché già usato)":""}.`);
+    invMod=0;
+  },
+  tomorrow(d){upd({tomorrow:{day:S.day+1,loc:S.loc,mod:(S.tomorrow&&S.tomorrow.day===S.day+1?(+S.tomorrow.mod||0):0)+(+d)}});},
+  clearTomorrow(){upd({tomorrow:null});},
+  helperToggle(k){helperSel=helperSel||Object.fromEntries(helpers().map(([h])=>[h,true]));helperSel[k]=!helperSel[k];render();},
+
+  /* ---------- rest ---------- */
+  rest(){if(S.final)return;const v=S.day+1;upd({day:v});addLog(`Riposo a ${S.loc}. Giorno ${v}.${locData(S.loc)&&locData(S.loc).rest?" "+locData(S.loc).rest:""}`);},
+
+  /* ---------- recruit ---------- */
+  recruit(id){
+    const L=locData(S.loc);const e=L&&L.rec.find(r=>r.id===id);if(!e||S.final)return;
+    if(recUsed(S.loc,id)>=(+e.boxes||1)){alertBox("Questa recluta è esaurita.");return;}
+    if(e.kind==="hel"){
+      const n=Math.max(+e.min||1,Math.min(+e.max||1,+($("#rc-"+id)||{}).value||+e.min||1));
+      if(helpers().length+n>4){alertBox(`Avete già ${helpers().length} helper: il massimo è 4. Congedane qualcuno prima di reclutare.`);return;}
+      const hel={};for(let i=0;i<n;i++)hel["h"+uid()]={name:e.name+(n>1?` ${i+1}`:""),life:+e.life||1,lmax:+e.life||1,san:+e.san||0,smax:+e.san||0,atk:+e.atk||0,note:e.note||""};
+      const days=+e.days||1;upd({day:S.day+days,hel,recUsed:{[S.loc]:{[id]:recUsed(S.loc,id)+1}}});
+      addLog(`Reclutati: ${n} × ${e.name} a ${S.loc} (+${days} ${days>1?"giorni":"giorno"}). Giorno ${S.day}.`);
+    }else{
+      const slot=SLOTS.find(k=>!invOf(k));
+      if(!slot){alertBox("Il gruppo ha già 4 investigatori: rimuovine uno dalla scheda Gruppo prima di reclutare.");return;}
+      if(SLOTS.some(k=>invOf(k)&&invOf(k).cls===e.cls)){alertBox(`${CL[e.cls].n} è già nel gruppo.`);return;}
+      const spy=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="spia"&&(s.used.zio||0)<s.lvl;});
+      const useSpy=spy&&$("#spy-"+id)&&$("#spy-"+id).checked;
+      const days=useSpy?1:(+e.days||2);
+      if(useSpy)invUpd(spy,{used:{zio:(invOf(spy).used.zio||0)+1}});
+      A.addInv(slot,e.cls);
+      upd({day:S.day+days,recUsed:{[S.loc]:{[id]:recUsed(S.loc,id)+1}}});
+      addLog(`Reclutamento a ${S.loc} (+${days} ${days>1?"giorni":"giorno"}${useSpy?", grazie alla Spia":""}). Giorno ${S.day}.`);
+    }
+  },
+  student(){
+    const p=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="professore"&&alive(s)&&(s.used.studente||0)<s.lvl;});
+    if(!p||!STUDENT_CITIES.includes(S.loc))return;
+    if(helpers().length>=4){alertBox("Avete già 4 helper.");return;}
+    invUpd(p,{used:{studente:(invOf(p).used.studente||0)+1}});
+    upd({hel:{["h"+uid()]:{name:"Studente",life:1,lmax:1,san:2,smax:2,atk:0,note:"+1 ai test di Sapere (non cumulabile tra studenti)"}}});
+    addLog("Il Professore recluta uno studente (azione gratuita).");
+  },
+
+  /* ---------- equip ---------- */
+  equip(){if(S.final)return;const v=S.day+1;upd({day:v});equipOpen=true;addLog(`Il gruppo si equipaggia a ${S.loc}. Giorno ${v}.`);},
+  equipClose(){equipOpen=false;render();},
+  take(slot,i){const s=invOf(slot);const w=locData(S.loc).arms[+i];const arm=mkArm(w.name,w.cat,w.name.match(/tommy/i)?3:undefined);
+    if(canCarry(s,arm))return;invUpd(slot,{arms:[...armsOf(s),arm]});addLog(`${CL[s.cls].n} prende: ${w.name}.`);},
+  dropArm(slot,i){const s=invOf(slot);const a=armsOf(s).slice();const w=a.splice(+i,1)[0];invUpd(slot,{arms:a});if(w)addLog(`${CL[s.cls].n} lascia: ${w.name}.`);},
+  addArmManual(slot){const n=($("#an-"+slot).value||"").trim();const c=$("#ac-"+slot).value;if(!n)return;const s=invOf(slot);const arm=mkArm(n,c,/tommy/i.test(n)?3:undefined);
+    const why=canCarry(s,arm);if(why){alertBox(`${CL[s.cls].n} non può prenderla: ${why}.`);return;}invUpd(slot,{arms:[...armsOf(s),arm]});},
+
+  /* ---------- group sanity test ---------- */
+  sanityAll(){
+    const D=Math.max(1,+sanDiff||4);const out=[];const ip={};const hp={};
+    SLOTS.forEach(k=>{const s=invOf(k);if(!alive(s))return;const r=rollEx();const t=r.reduce((a,b)=>a+b,0);const ok=t>=D;
+      if(!ok)invUpd(k,{san:s.san-1});out.push({k,name:CL[s.cls].n,t,ok,kind:"inv"});});
+    const sel=S.combat&&S.combat.helpers||{};
+    helpers().forEach(([k,h])=>{if(sel[k]===false||h.life<=0||!(h.smax>0)||h.san<=0)return;const r=rollEx();const t=r.reduce((a,b)=>a+b,0);const ok=t>=D;
+      if(!ok)hp[k]={san:h.san-1};out.push({k,name:h.name,t,ok,kind:"hel"});});
+    if(Object.keys(hp).length)upd({hel:hp});
+    lastSan={D,out,ts:Date.now()};
+    const fails=out.filter(o=>!o.ok).map(o=>o.name);
+    upd({last:{who:"",text:`Test di Sanità ${D} per tutti`,total:`${out.length-fails.length}/${out.length}`,res:fails.length?`Falliti: ${fails.join(", ")}`:"Tutti superati",ok:!fails.length,ts:Date.now()}});
+    addLog(`Test di Sanità ${D}: ${out.map(o=>`${o.name} ${o.t} ${o.ok?"ok":"−1"}`).join(", ")}.`);
+  },
+  comfort(i){const o=lastSan&&lastSan.out[+i];if(!o||o.ok||o.comf)return;
+    const n=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="infermiera"&&alive(s)&&(s.used.conforto||0)<s.lvl;});if(!n)return;
+    invUpd(n,{used:{conforto:(invOf(n).used.conforto||0)+1}});
+    if(o.kind==="inv"){const s=invOf(o.k);invUpd(o.k,{san:Math.min(maxS(s),s.san+1)});}else{const h=S.hel[o.k];upd({hel:{[o.k]:{san:Math.min(h.smax,h.san+1)}}});}
+    o.comf=true;addLog(`L'Infermiera conforta ${o.name}: nessuna Sanità persa.`);render();},
+
+  /* ---------- guided combat ---------- */
+  combatStart(){upd({combat:{on:true,round:1,init:false,flee:false,assign:clearMap(S.combat&&S.combat.assign),cres:clearMap(S.combat&&S.combat.cres)}});addLog("Inizia il combattimento.");},
+  toggleInit(){upd({combat:{init:!(S.combat&&S.combat.init)}});},
+  toggleHel(k){const cur=S.combat&&S.combat.helpers||{};upd({combat:{helpers:{[k]:cur[k]===false}}});},
+  assign(flee){
+    const A2=computeAssign();
+    upd({combat:{assign:{...clearMap(S.combat.assign),...A2},cres:clearMap(S.combat.cres),flee:!!flee}});
+    addLog(flee?"Il gruppo tenta la fuga: i nemici attaccano un'ultima volta.":`Round ${S.combat.round}: i nemici attaccano.`);
+  },
+  defend(aid){
+    const a=S.combat.assign[aid];if(!a)return;if(S.combat.cres&&S.combat.cres[aid]&&S.combat.cres[aid].done)return;
+    const tgtInv=SLOTS.includes(a.tgt);const s=tgtInv?invOf(a.tgt):S.hel[a.tgt];
+    if(!s||s.life<=0){markRes(aid,"annullato (bersaglio fuori gioco)");return;}
+    const r=rollEx();const t=r.reduce((x,y)=>x+y,0);const ok=t>=a.L;
+    const res=ok?`Schivato (${t})`:`Colpito (${t}): −${a.dmg} Vita`;
+    if(!ok){if(tgtInv)invUpd(a.tgt,{life:Math.max(0,s.life-a.dmg)});else if(isNarr)upd({hel:{[a.tgt]:{life:Math.max(0,s.life-a.dmg)}}});}
+    markRes(aid,res);
+    upd({last:{who:a.tname,text:`Difesa vs ${a.fname} L${a.L}`,total:t,res:ok?"Schivato":"Colpito",ok,ts:Date.now()}});
+    addLog(`${a.tname} si difende da ${a.fname} (L${a.L}): ${t} [${r.join("+")}] — ${ok?"schivato":"colpito, −"+a.dmg+" Vita"}.`,a.tname);
+  },
+  nextRound(){upd({combat:{round:(S.combat.round||1)+1,assign:clearMap(S.combat.assign),cres:clearMap(S.combat.cres),flee:false}});addLog(`Round ${S.combat.round}.`);},
+  endFlee(){const o={};Object.keys(S.foes).forEach(k=>o[k]=null);upd({foes:o,combat:{on:false,flee:false,assign:clearMap(S.combat.assign),cres:clearMap(S.combat.cres)}});addLog("Il gruppo è fuggito: niente ricompense dall'incontro.");}
+};
+function clearMap(m){const o={};Object.keys(m||{}).forEach(k=>o[k]=null);return o;}
+function markRes(aid,res){upd({combat:{cres:{[aid]:{done:true,res}}}});}
+function alertBox(t){modal={title:"Attenzione",text:t,ok:"Ok",fn:()=>{}};render();}
+
+/* Distribute enemy attacks as evenly as possible; extra attacks go to whoever has the most Life. Helpers never face Bosses. */
+function computeAssign(){
+  const sel=S.combat&&S.combat.helpers||{};
+  const T=[];
+  SLOTS.forEach(k=>{const s=invOf(k);if(alive(s))T.push({id:k,name:CL[s.cls].n,inv:true,life:s.life,c:0});});
+  helpers().forEach(([k,h])=>{if(sel[k]===false||h.life<=0||(h.smax>0&&h.san<=0))return;T.push({id:k,name:h.name,inv:false,life:h.life,c:0});});
+  const atk=[];
+  Object.entries(S.foes).forEach(([fid,f])=>{if(!f||!f.name||f.n<=0)return;
+    const times=f.kind==="Boss"?Math.max(1,+f.atk||1):f.n;
+    for(let i=0;i<times;i++)atk.push({fid,fname:f.name,L:f.L,dmg:Math.max(1,+f.dmg||1),boss:f.kind==="Boss"});});
+  atk.sort((a,b)=>b.boss-a.boss);
+  const out={};let i=0;
+  atk.forEach(a=>{const pool=T.filter(t=>a.boss?t.inv:true);if(!pool.length)return;
+    const minc=Math.min(...pool.map(t=>t.c));const cand=pool.filter(t=>t.c===minc).sort((x,y)=>y.life-x.life);const t=cand[0];t.c++;
+    out["a"+(i++)+uid().slice(0,3)]={...a,tgt:t.id,tname:t.name};});
+  return out;
+}
+
+/* ---------- attack auto-apply (called from doRoll) ---------- */
+function applyAttack(fid,wounds,who){
+  const f=S.foes[fid];if(!f||!f.name||wounds<=0||f.n<=0)return;
+  const kill=Math.min(wounds,f.n);const v=f.n-kill;const patch={foes:{[fid]:{n:v}}};
+  let msg=`${f.name}: ${f.kind==="Boss"?"−"+kill+" Vita":kill+" abbattuti"}`;
+  if(f.kind==="Minion"){let m=S.minions+kill,xp=S.xp,c=0;while(m>=10){m-=10;xp++;c++;}patch.minions=m;patch.xp=xp;if(c)msg+=`; ${c*10} minion diventano ${c} PE`;}
+  if(f.kind==="Boss"&&v===0){patch.xp=(patch.xp!=null?patch.xp:S.xp)+1;msg+=". Sconfitto! +1 PE";}
+  else if(v===0)msg+=". Tutti sconfitti";
+  else if(f.kind==="Vermin"&&v<f.n0/2&&f.n>=f.n0/2)msg+=". Hanno perso più di metà del gruppo e fuggono";
+  upd(patch);addLog(msg+".",who);
+}
+
+/* ================= views ================= */
+function viewLocation(){
+  if(locEdit)return viewLocEdit();
+  const L=locData(S.loc);
+  if(!S.loc)return `<div class="card"><p>Il gruppo non ha ancora un luogo.</p></div>`;
+  if(!L)return `<div class="card"><h2>${esc(S.loc)}</h2><p>Questo luogo non è ancora configurato. Inserisci dal libro la struttura della tabella Indagare, le reclute e le armi: lo fai una volta sola e resta salvato per le prossime partite.</p><div class="row"><button class="pri" data-a="s1" data-f="editLoc">Configura ${esc(S.loc)}</button></div></div>${encCard()}`;
+  const newDay=S.day+1;const tm=S.tomorrow&&S.tomorrow.day===newDay&&S.tomorrow.loc===S.loc?+S.tomorrow.mod:0;
+  const hel=helpers();const sel=helperSel||Object.fromEntries(hel.map(([k])=>[k,true]));
+  const boxes=[];for(let n=L.min;n<=L.max;n++){const b=+L.enc[n]||0;const u=usedOf(S.loc,n);boxes.push(`<span class="stat ${b&&u>=b?"warn":""}"><b>${n}</b>${b?` ${"■".repeat(Math.min(u,b))}${"□".repeat(Math.max(0,b-u))}`:" ∞"}</span>`);}
+  const prof=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="professore"&&alive(s)&&(s.used.studente||0)<s.lvl;});
+  const spy=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="spia"&&alive(s)&&(s.used.zio||0)<s.lvl;});
+  return `<div class="card"><div class="row sb"><h2>${esc(S.loc)}</h2><button class="sm" data-a="s1" data-f="editLoc">Modifica dati del luogo</button></div>
+    ${L.note?`<p class="muted">Bonus del luogo: ${esc(L.note)}</p>`:""}</div>
+  <div class="card"><h3>Indagare <span class="muted">(1 giorno)</span></h3>
+    <div class="row">${boxes.join("")}</div>
+    ${hel.length?`<div class="row"><span class="muted">Helper che partecipano:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]?"pri":""}" data-a="s1" data-f="helperToggle" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
+    <div class="row"><label for="invmod" style="flex-direction:row;align-items:center;gap:6px">Modificatore <input id="invmod" type="number" value="${invMod}" data-s1v="invMod" style="width:80px"></label>
+      ${tm?`<span class="chip me">domani ${tm>0?"+":""}${tm}</span>`:""}</div>
+    <div class="row"><button class="pri" data-a="s1" data-f="investigate" ${S.final?"disabled":""}>Indaga</button></div>
+  </div>
+  ${encCard()}
+  <div class="card"><h3>Reclutare</h3>
+    ${L.rec.length?L.rec.map(r=>{const u=recUsed(S.loc,r.id),b=+r.boxes||1,left=b-u;
+      const label=r.kind==="inv"?(CL[r.cls]?CL[r.cls].n:"?"):`${esc(r.name)} <span class="muted">Vita ${r.life}, San ${r.san}${+r.atk?`, +${r.atk} att.`:""}</span>`;
+      return `<div class="enemy"><div><b>${label}</b> <span class="muted">· ${r.days||(r.kind==="inv"?2:1)} g · ${"■".repeat(u)}${"□".repeat(Math.max(0,left))}</span>${r.note?`<br><span class="muted">${esc(r.note)}</span>`:""}</div>
+        <div class="row">${r.kind==="hel"&&+r.max>+r.min?`<select id="rc-${r.id}" aria-label="quanti" style="width:70px">${Array.from({length:+r.max-+r.min+1},(_,i)=>`<option>${+r.min+i}</option>`).join("")}</select>`:""}
+        ${r.kind==="inv"&&spy?`<label style="flex-direction:row;align-items:center;gap:4px" for="spy-${r.id}"><input id="spy-${r.id}" type="checkbox" style="width:auto;min-height:0">Spia (1 g)</label>`:""}
+        <button class="sm" data-a="s1" data-f="recruit" data-p="${r.id}" ${left<=0||S.final?"disabled":""}>Recluta</button></div></div>`;}).join(""):`<p class="muted">Nessuna recluta inserita per questo luogo.</p>`}
+    ${prof&&STUDENT_CITIES.includes(S.loc)?`<div class="row"><button class="sm" data-a="s1" data-f="student">Studente gratuito del Professore</button></div>`:""}
+    <p class="muted">Helper: massimo 4. Investigatori: massimo 4, ognuno una volta sola.</p>
+  </div>
+  <div class="card"><h3>Equipaggiarsi <span class="muted">(1 giorno)</span></h3>
+    ${equipOpen?viewEquip(L):`<p class="muted">${L.arms.length?L.arms.map(a=>`${esc(a.name)} (${CAT[a.cat]})${a.cond?" — "+esc(a.cond):""}`).join(" · "):"Nessuna arma inserita."}</p><div class="row"><button data-a="s1" data-f="equip" ${S.final||!L.arms.length?"disabled":""}>Equipaggiati</button></div>`}
+  </div>
+  <div class="card"><h3>Riposare <span class="muted">(1 giorno)</span></h3>${L.rest?`<p class="muted">${esc(L.rest)}</p>`:""}
+    <div class="row"><button data-a="s1" data-f="rest" ${S.final?"disabled":""}>Riposa</button></div><p class="muted">Poi recupera Vita e Sanità dalle schede.</p></div>`;
+}
+function encCard(){
+  const e=S.enc&&S.enc.loc===S.loc&&S.day>=0?S.enc:null;
+  const nurse=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="infermiera"&&alive(s)&&(s.used.conforto||0)<s.lvl;});
+  return `<div class="card"><h3>Incontro ${e&&e.n!=null?`<b class="ok">${e.n}</b>`:""}</h3>
+    ${e?(e.n!=null?`<p>Leggi l'incontro <b>${e.n}</b> di ${esc(e.loc)} dal libro.</p>`:`<p>Nessun evento.</p>`):`<p class="muted">Gli strumenti qui sotto servono durante qualunque incontro.</p>`}
+    <div class="row"><label for="sandiff" style="flex-direction:row;align-items:center;gap:6px">Test di Sanità <input id="sandiff" type="number" min="1" value="${sanDiff}" data-s1v="sanDiff" style="width:70px"></label><button data-a="s1" data-f="sanityAll">Tira per tutti</button></div>
+    ${lastSan&&Date.now()-lastSan.ts<600000?`<div class="result">${lastSan.out.map((o,i)=>`${esc(o.name)}: ${o.t} ${o.ok?`<span class="ok">ok</span>`:o.comf?`<span class="ok">confortato</span>`:`<span class="ko">−1</span>${nurse?` <button class="sm" data-a="s1" data-f="comfort" data-p="${i}">Conforto</button>`:""}`}`).join("<br>")}</div>`:""}
+    <div class="row"><span class="muted">Per domani:</span><button class="sm" data-a="s1" data-f="tomorrow" data-p="1">+1</button><button class="sm" data-a="s1" data-f="tomorrow" data-p="2">+2</button><button class="sm" data-a="s1" data-f="tomorrow" data-p="-1">−1</button>
+      ${S.tomorrow&&S.tomorrow.day===S.day+1?`<span class="chip me">${S.tomorrow.mod>0?"+":""}${S.tomorrow.mod} domani a ${esc(S.tomorrow.loc)}</span><button class="sm" data-a="s1" data-f="clearTomorrow">×</button>`:""}</div>
+    <div class="row"><button class="sm" data-a="clue">Indizio (tira d6)</button><button class="sm" data-a="tab" data-p="combatt">Vai al combattimento</button></div>
+  </div>`;
+}
+function viewEquip(L){
+  return SLOTS.filter(k=>invOf(k)).map(k=>{const s=invOf(k);const a=armsOf(s);
+    return `<div class="card" style="background:#161b1a"><b>${CL[s.cls].n}</b> <span class="muted">(${a.length}/${maxArms(s)}, preferite: ${PREF[s.cls].split("").map(c=>CAT[c]).join(", ")})</span>
+      <div class="row">${a.map((w,i)=>`<span class="stat">${esc(w.name)} <span class="muted">${CAT[w.cat]}</span><button class="sm" data-a="s1" data-f="dropArm" data-p="${k}" data-k="${i}" aria-label="lascia">×</button></span>`).join("")}</div>
+      <div class="row">${L.arms.map((w,i)=>{const why=canCarry(s,mkArm(w.name,w.cat));return `<button class="sm" data-a="s1" data-f="take" data-p="${k}" data-k="${i}" ${why?`disabled title="${esc(why)}"`:""}>Prendi ${esc(w.name)}</button>`;}).join("")}</div></div>`;}).join("")
+    +`<div class="row"><button class="pri" data-a="s1" data-f="equipClose">Fine equipaggiamento</button></div>`;
+}
+function viewLocEdit(){
+  const e=locEdit;const rng=[];for(let n=+e.min||1;n<=(+e.max||6);n++)rng.push(n);
+  const opt=(v,list)=>list.map(([k,n])=>`<option value="${k}" ${String(v)===String(k)?"selected":""}>${n}</option>`).join("");
+  return `<div class="card"><h2>Dati di ${esc(S.loc)}</h2><p class="muted">Copia dal libro solo i numeri e i nomi che ti servono. Restano nel tuo database, non nella pagina.</p>
+    <h3>Tabella Indagare</h3>
+    <div class="f"><label for="le-min">Risultato minimo<input id="le-min" type="number" data-le="min" value="${e.min}"></label><label for="le-max">Risultato massimo<input id="le-max" type="number" data-le="max" value="${e.max}"></label></div>
+    <div class="f">${rng.map(n=>`<label for="le-e${n}">Risultato ${n}<select id="le-e${n}" data-le="enc.${n}">${opt(e.enc[n]||0,[[0,"ripetibile"],[1,"1 casella"],[2,"2 caselle"],[3,"3 caselle"]])}</select></label>`).join("")}</div>
+    <label for="le-note">Bonus del luogo sul tiro (nota)<input id="le-note" data-le="note" value="${esc(e.note)}"></label>
+    <label for="le-rest">Riposo (nota)<input id="le-rest" data-le="rest" value="${esc(e.rest)}"></label>
+    <h3>Reclute</h3>
+    ${e.rec.map((r,i)=>r.kind==="inv"?`<div class="card" style="background:#161b1a"><div class="f">
+        <label for="le-r${i}c">Investigatore<select id="le-r${i}c" data-le="rec.${i}.cls">${opt(r.cls,[["","—"],...Object.entries(CL).map(([k,c])=>[k,c.n])])}</select></label>
+        <label for="le-r${i}d">Giorni<input id="le-r${i}d" type="number" data-le="rec.${i}.days" value="${r.days}"></label>
+        <label for="le-r${i}b">Caselle<input id="le-r${i}b" type="number" min="1" data-le="rec.${i}.boxes" value="${r.boxes}"></label></div>
+        <div class="row"><button class="sm danger" data-a="s1" data-f="delRec" data-p="${i}">Togli</button></div></div>`
+      :`<div class="card" style="background:#161b1a"><div class="f">
+        <label for="le-r${i}n">Helper<input id="le-r${i}n" data-le="rec.${i}.name" value="${esc(r.name)}"></label>
+        <label for="le-r${i}mi">Quanti da<input id="le-r${i}mi" type="number" min="1" data-le="rec.${i}.min" value="${r.min}"></label>
+        <label for="le-r${i}ma">a<input id="le-r${i}ma" type="number" min="1" data-le="rec.${i}.max" value="${r.max}"></label>
+        <label for="le-r${i}l">Vita<input id="le-r${i}l" type="number" data-le="rec.${i}.life" value="${r.life}"></label>
+        <label for="le-r${i}s">Sanità<input id="le-r${i}s" type="number" data-le="rec.${i}.san" value="${r.san}"></label>
+        <label for="le-r${i}a">Bonus attacco<input id="le-r${i}a" type="number" data-le="rec.${i}.atk" value="${r.atk}"></label>
+        <label for="le-r${i}d">Giorni<input id="le-r${i}d" type="number" data-le="rec.${i}.days" value="${r.days}"></label>
+        <label for="le-r${i}b">Caselle<input id="le-r${i}b" type="number" min="1" data-le="rec.${i}.boxes" value="${r.boxes}"></label></div>
+        <label for="le-r${i}t">Abilità (nota)<input id="le-r${i}t" data-le="rec.${i}.note" value="${esc(r.note)}"></label>
+        <div class="row"><button class="sm danger" data-a="s1" data-f="delRec" data-p="${i}">Togli</button></div></div>`).join("")}
+    <div class="row"><button class="sm" data-a="s1" data-f="addRec" data-p="hel">+ Helper</button><button class="sm" data-a="s1" data-f="addRec" data-p="inv">+ Investigatore</button></div>
+    <h3>Armi in vendita</h3>
+    ${e.arms.map((a,i)=>`<div class="row"><input id="le-a${i}n" aria-label="Nome arma" placeholder="Nome" data-le="arms.${i}.name" value="${esc(a.name)}" style="flex:2">
+      <select id="le-a${i}c" aria-label="Categoria" data-le="arms.${i}.cat" style="flex:1">${opt(a.cat,Object.entries(CAT))}</select>
+      <input id="le-a${i}x" aria-label="Condizione" placeholder="condizione (facoltativa)" data-le="arms.${i}.cond" value="${esc(a.cond||"")}" style="flex:2">
+      <button class="sm danger" data-a="s1" data-f="delArm" data-p="${i}" aria-label="togli">×</button></div>`).join("")}
+    <div class="row"><button class="sm" data-a="s1" data-f="addArm">+ Arma</button></div>
+    <div class="row"><button class="pri" data-a="s1" data-f="saveLoc">Salva</button><button data-a="s1" data-f="cancelLoc">Annulla</button></div></div>`;
+}
+function armsBlock(slot,s){
+  const a=armsOf(s);
+  return `<div><span class="muted" style="font-size:13px">Armi (${a.length}/${maxArms(s)})</span><div class="row">${a.map((w,i)=>`<span class="stat">${esc(w.name)} <span class="muted">${CAT[w.cat]||""}${w.mod?` +${w.mod}`:""}</span><button class="sm" data-a="s1" data-f="dropArm" data-p="${slot}" data-k="${i}" aria-label="lascia ${esc(w.name)}">×</button></span>`).join("")||`<span class="muted">disarmato (−1)</span>`}</div>
+    ${a.length<maxArms(s)?`<div class="row"><input id="an-${slot}" placeholder="Arma trovata" aria-label="Nome arma" style="flex:2"><select id="ac-${slot}" aria-label="Categoria" style="flex:1">${PREF[s.cls].split("").map(c=>`<option value="${c}">${CAT[c]}</option>`).join("")}</select><button class="sm" data-a="s1" data-f="addArmManual" data-p="${slot}">Aggiungi</button></div>`:""}</div>`;
+}
+function combatGuide(){
+  const c=S.combat||{};const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);
+  if(!c.on)return foes.length?`<div class="card"><div class="row"><button class="pri" data-a="s1" data-f="combatStart">Inizia il combattimento guidato</button></div></div>`:"";
+  const hel=helpers();const sel=c.helpers||{};
+  const as=Object.entries(c.assign||{}).filter(([,a])=>a);const cr=c.cres||{};const done=as.length&&as.every(([k])=>cr[k]&&cr[k].done);
+  return `<div class="card"><div class="row sb"><h2>Round ${c.round||1}</h2><button class="sm ${c.init?"pri":""}" data-a="s1" data-f="toggleInit">${c.init?"Nemici con l'iniziativa":"Iniziativa al gruppo"}</button></div>
+    <p class="muted">${c.init?"Prima la difesa, poi l'attacco.":"Prima l'attacco (ognuno dalla scheda Dadi, scegliendo il bersaglio), poi la difesa."}</p>
+    ${hel.length?`<div class="row"><span class="muted">Helper in combattimento:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]!==false?"pri":""}" data-a="s1" data-f="toggleHel" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
+    ${as.length?`<h3>${c.flee?"Fuga: ultimo attacco dei nemici":"Difesa"}</h3>${as.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span><b>${esc(a.tname)}</b> ← ${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="sm" data-a="s1" data-f="defend" data-p="${k}">Difendi</button>`}</div>`;}).join("")}`:""}
+    <div class="row">${!as.length?`<button data-a="s1" data-f="assign">Fase di difesa: assegna gli attacchi</button>`:""}
+      ${done&&!c.flee?`<button class="pri" data-a="s1" data-f="nextRound">Round successivo</button>`:""}
+      ${done&&c.flee?`<button class="pri" data-a="s1" data-f="endFlee">Concludi la fuga</button>`:""}
+      ${(c.round||1)>=2&&!as.length?`<button class="danger" data-a="s1" data-f="assign" data-p="flee">Fuggire</button>`:""}</div>
+  </div>`;
+}
+function myDefenses(){
+  const c=S.combat||{};if(!c.on||!MINE)return "";const cr=c.cres||{};
+  const mine=Object.entries(c.assign||{}).filter(([,a])=>a&&a.tgt===MINE.slot);if(!mine.length)return "";
+  return `<div class="card" style="border-color:var(--blood)"><h3>Ti stanno attaccando</h3>${mine.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="pri sm" data-a="s1" data-f="defend" data-p="${k}">Difenditi</button>`}</div>`;}).join("")}</div>`;
+}
+
 function classOptions(sel,slot,source){
   const taken=SLOTS.filter(k=>k!==slot).map(k=>source(k)).filter(Boolean);
   return `<option value="">— vuoto —</option>`+Object.entries(CL).map(([k,c])=>`<option value="${k}" ${sel===k?"selected":""} ${taken.includes(k)?"disabled":""}>${c.n}</option>`).join("");
@@ -434,7 +740,7 @@ function sheet(slot,s){
     ${meter("Vita","l",s.life,maxL(s),"stat",slot)}${meter("Sanità","s",s.san,maxS(s),"stat",slot)}
     ${c.ctr.length?`<div class="row">${c.ctr.map(x=>`<span class="ctr">${x.n} <button class="sm" data-a="ctr" data-p="${slot}" data-k="${x.k}" data-d="-1" aria-label="annulla uso">−</button><span class="num">${s.used[x.k]||0}/${ctrMax(x,s)}</span><button class="sm" data-a="ctr" data-p="${slot}" data-k="${x.k}" data-d="1">usa</button></span>`).join("")}</div>`:""}
     <ul class="ab">${c.ab.map(a=>`<li>${esc(a)}</li>`).join("")}<li>Armi preferite: ${esc(c.pref)}</li></ul>
-    <label for="weap-${slot}">Armi (max ${s.cls==="gangster"?3:2})<input id="weap-${slot}" data-tx="weap" data-p="${slot}" value="${esc(s.weap)}"></label>
+    ${armsBlock(slot,s)}
     <label for="items-${slot}">Oggetti arcani (max 2)<input id="items-${slot}" data-tx="items" data-p="${slot}" value="${esc(s.items)}"></label>
     ${c.spells?`<label for="spells-${slot}">Incantesimi<input id="spells-${slot}" data-tx="spells" data-p="${slot}" value="${esc(s.spells)}"></label>`:""}
     <label for="notes-${slot}">Note<input id="notes-${slot}" data-tx="notes" data-p="${slot}" value="${esc(s.notes)}"></label>
@@ -478,8 +784,8 @@ function viewMine(){
   <p class="muted">Gli altri giocatori non vedono la tua Vita, la tua Sanità né il tuo equipaggiamento. Se vuoi che lo sappiano, diglielo.</p>`;
 }
 function viewTable(){
-  const foes=Object.entries(S.foes).filter(([,x])=>x);const hel=Object.entries(S.hel).filter(([,h])=>h);
-  return `<div class="card"><h2>Nemici in campo</h2>${foes.length?foes.map(([,x])=>`<div class="enemy"><div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${x.kind}${x.inc?" · incorporeo":""}</span></div><div class="num">${x.n}${x.kind==="Boss"?" Vita":" rimasti"}</div></div>`).join(""):`<p class="muted">Nessun nemico.</p>`}</div>
+  const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);const hel=Object.entries(S.hel).filter(([,h])=>h);
+  return `<div class="card"><h2>Nemici in campo${S.combat&&S.combat.on?` · round ${S.combat.round||1}`:""}</h2>${foes.length?foes.map(([,x])=>`<div class="enemy"><div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${x.kind}${x.inc?" · incorporeo":""}</span></div><div class="num">${x.n}${x.kind==="Boss"?" Vita":" rimasti"}</div></div>`).join(""):`<p class="muted">Nessun nemico.</p>`}</div>
   <div class="card"><h2>Helper del gruppo</h2>${hel.length?hel.map(([,h])=>`<div class="row sb"><span><b>${esc(h.name)}</b> <span class="muted">${esc(h.note)}</span></span><span class="num">Vita ${h.life}/${h.lmax} · San ${h.san}/${h.smax}</span></div>`).join(""):`<p class="muted">Nessun helper.</p>`}</div>
   ${cluesCard(false)}
   <div class="card"><h2>Mappa</h2>${mapSvg(null)}</div>`;
@@ -491,7 +797,7 @@ function viewDice(){
     hint=[b?`bonus di classe +${b} agli attacchi`:"",c==="medium"?`+${L} contro i non-morti`:"",c==="spia"?`+${L} contro gli umani`:"",c==="professore"?`+${L} ai test di Sapere`:"",
       c==="occultista"?`+${L} ai test di Occulto`:"",c==="detective"?`+${Math.floor(L/2)} a Sapere o Occulto`:"",CL[c].inc?"ferisce gli incorporei 1 per colpo":"",
       (c==="veterano"||c==="gangster")?"niente test di Occulto o Sapere":""].filter(Boolean).join(" · ");}
-  const foes=Object.entries(S.foes).filter(([,x])=>x&&x.n>0);
+  const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);
   const modes=[["attacco","Attacco"],["difesa","Difesa"],["sanita","Test di Sanità"],["sapere","Test di Sapere"],["occulto","Test di Occulto"],["libero","Tiro libero"]];
   const ck=(id,k,lab)=>`<label style="flex-direction:row;align-items:center;gap:6px" for="${id}"><input id="${id}" type="checkbox" style="width:auto;min-height:0" data-rf="${k}" ${f[k]?"checked":""}> ${lab}</label>`;
   return `<div class="card"><h2>Tira i dadi</h2><p class="muted">Ogni tiro compare in alto e nel diario di tutti. I 6 esplodono nelle azioni dei personaggi.</p>
@@ -500,17 +806,17 @@ function viewDice(){
     ${hint?`<p class="muted">${esc(hint)}</p>`:""}
     ${f.mode==="libero"?`<div class="f"><label for="rExpr">Dadi<select id="rExpr" data-rf="expr">${["d6","2d6","3d6","d3","d2"].map(x=>`<option ${f.expr===x?"selected":""}>${x}</option>`).join("")}</select></label>
       <label for="rMod">Modificatore<input id="rMod" type="number" data-rf="mod" value="${f.mod}"></label></div>`:`
-    <div class="f">${f.mode==="attacco"?`<label for="rWeap">Arma<select id="rWeap" data-rf="weapon">${[["-1","Disarmato −1"],["0","Normale +0"],["1","Potente / Lanciafiamme +1"],["3","Tommy Gun / Lanciafiamme Veterano +3"]].map(([v,n])=>`<option value="${v}" ${String(f.weapon)===v?"selected":""}>${n}</option>`).join("")}</select></label>`:""}
+    <div class="f">${f.mode==="attacco"?`<label for="rWeap">Arma<select id="rWeap" data-rf="weapon">${(m&&m.s?[...armsOf(m.s).map((w,i)=>[String(i),`${w.name} (${w.mod>=0?"+":""}${w.mod})`]),["u","Disarmato −1"]]:m&&m.h?[["0",`Arma propria${m.h.atk?" (bonus nei modificatori)":""}`]]:[["-1","Disarmato −1"],["0","Normale +0"],["1","Potente / Lanciafiamme +1"],["3","Tommy Gun / Lanciafiamme Veterano +3"]]).map(([val,n])=>`<option value="${val}" ${String(f.weapon)===val?"selected":""}>${esc(n)}</option>`).join("")}</select></label>`:""}
       <label for="rMod">Altri modificatori<input id="rMod" type="number" data-rf="mod" value="${f.mod}"></label>
       <label for="rT">${f.mode==="attacco"||f.mode==="difesa"?"Livello del nemico":"Difficoltà"}<input id="rT" type="number" min="1" data-rf="target" value="${f.target}"></label></div>
     ${f.mode==="attacco"?`<div class="row">${ck("rInc","inc","Bersaglio incorporeo (2 colpi = 1 ferita)")}</div>
-      ${foes.length?`<div class="row"><span class="muted">Bersaglio rapido:</span>${foes.map(([k,x])=>`<button class="sm" data-a="target" data-p="${k}">${esc(x.name)} L${x.L}</button>`).join("")}</div>`:""}`:""}
+      ${foes.length?`<label for="rFid">Bersaglio (le ferite vengono tolte da sole)<select id="rFid" data-rf="fid"><option value="">— nessuno, segno a mano —</option>${foes.map(([k,x])=>`<option value="${k}" ${f.fid===k?"selected":""}>${esc(x.name)} L${x.L}${x.inc?" incorporeo":""} (${x.n})</option>`).join("")}</select></label>`:""}`:""}
     <div class="row">${ck("rEx","ex","6 esplosivi")}</div>`}
     <div class="row"><button class="pri" data-a="roll">Tira</button>${m&&m.s&&f.mode==="attacco"&&classBonus(m.s)?`<button class="sm" data-a="classMod">Metti il bonus di classe (+${classBonus(m.s)})</button>`:""}</div></div>`;
 }
 function viewCombat(){
-  const foes=Object.entries(S.foes).filter(([,x])=>x);
-  return `<div class="card"><div class="row sb"><h2>Combattimento</h2>${foes.length?`<button class="danger sm" data-a="endCombat">Fine combattimento</button>`:""}</div>
+  const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name);
+  return `<div class="card"><div class="row sb"><h2>Nemici</h2>${foes.length?`<button class="danger sm" data-a="endCombat">Fine combattimento</button>`:""}</div>
     ${foes.length?foes.map(([k,x])=>`<div class="enemy"><div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${x.kind}${x.inc?" · incorporeo":""}</span><br>
       <span class="muted">${x.kind==="Boss"?"Vita":"Rimasti"}:</span> <span class="num ${x.n===0?"ko":""}">${x.n}</span><span class="muted num"> / ${x.n0}</span>${x.kind==="Vermin"&&x.n>0&&x.n<x.n0/2?` <span class="chip dead">fuggono</span>`:""}</div>
       <div class="row"><button data-a="foe" data-p="${k}" data-d="-1">${x.kind==="Boss"?"−1 Vita":"−1 sconfitto"}</button><button class="sm" data-a="foe" data-p="${k}" data-d="1" aria-label="aggiungi">+</button><button class="sm" data-a="delFoe" data-p="${k}" aria-label="togli">×</button></div></div>`).join(""):`<p class="muted">Nessun nemico in campo. I giocatori vedono i nemici nella scheda Tavolo.</p>`}
@@ -519,7 +825,9 @@ function viewCombat(){
     <label for="fName">Nome<input id="fName" placeholder="Cultisti"></label>
     <label for="fKind">Tipo<select id="fKind"><option>Minion</option><option>Vermin</option><option>Boss</option></select></label>
     <label for="fL">Livello<input id="fL" type="number" min="1" value="3"></label>
-    <label for="fN">Quanti / Vita del boss<input id="fN" type="number" min="1" value="3"></label></div>
+    <label for="fN">Quanti / Vita del boss<input id="fN" type="number" min="1" value="3"></label>
+    <label for="fAtk">Attacchi per round (boss)<input id="fAtk" type="number" min="1" value="1"></label>
+    <label for="fDmg">Ferite per colpo<input id="fDmg" type="number" min="1" value="1"></label></div>
     <div class="row"><label style="flex-direction:row;align-items:center;gap:6px" for="fInc"><input id="fInc" type="checkbox" style="width:auto;min-height:0"> Incorporei</label><button class="pri" data-a="addFoe">Aggiungi</button></div>
     <div class="row"><span class="muted">PE e minion:</span><button class="sm" data-a="minion" data-p="1">+1 minion</button><button class="sm" data-a="xp" data-p="1">+1 PE</button><button class="sm" data-a="xp" data-p="-1">−1 PE</button></div></div>`;
 }
@@ -564,6 +872,11 @@ const PLAYER_OK=new Set(["stat","ctr","levelUp","roll","note","target","classMod
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-a]");if(!t||t.tagName==="SELECT")return;
   const a=t.dataset.a,p=t.dataset.p,d=+t.dataset.d;
+  if(a==="s1"){const f=t.dataset.f,k=t.dataset.k;if(!role||!S1[f])return;
+    if(!isNarr){if(!["defend","dropArm","addArmManual"].includes(f))return;
+      if(f==="defend"){const as=S.combat&&S.combat.assign&&S.combat.assign[p];if(!as||!MINE||as.tgt!==MINE.slot)return;}
+      else if(!MINE||p!==MINE.slot)return;}
+    S1[f](p,k);return;}
   if(!OPEN_OK.has(a)){
     if(!role)return;
     if(!isNarr&&!PLAYER_OK.has(a))return;
@@ -586,6 +899,7 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target,p=t.dataset.p;if(!role)return;
+  if(t.dataset.le&&locEdit){if(t.dataset.le==="min"||t.dataset.le==="max")render();return;}
   if(t.dataset.tx){if(!isNarr&&(!MINE||MINE.slot!==p))return;invUpd(p,{[t.dataset.tx]:t.value});return;}
   if(!isNarr)return;
   if(t.dataset.ch==="roster"){A.pickRoster(p,t.value);return;}
@@ -595,8 +909,12 @@ document.addEventListener("change",e=>{
   if(t.dataset.gtx){upd({[t.dataset.gtx]:t.value});}
 });
 document.addEventListener("input",e=>{
-  const t=e.target;if(!t.dataset.rf)return;const k=t.dataset.rf;rollForm[k]=t.type==="checkbox"?t.checked:t.value;
-  if(k==="who"||k==="mode"){const ms=members();const m=isNarr?ms.find(x=>x.id===rollForm.who):ms[0];rollForm.mod=m&&m.s&&rollForm.mode==="attacco"?classBonus(m.s):0;render();}
+  const t=e.target;
+  if(t.dataset.le&&locEdit){const path=t.dataset.le.split(".");let o=locEdit;for(let i=0;i<path.length-1;i++)o=o[path[i]];o[path[path.length-1]]=t.value;return;}
+  if(t.dataset.s1v){if(t.dataset.s1v==="invMod")invMod=+t.value||0;else sanDiff=+t.value||4;return;}
+  if(!t.dataset.rf)return;const k=t.dataset.rf;rollForm[k]=t.type==="checkbox"?t.checked:t.value;
+  if(k==="fid"){const x=S.foes[t.value];if(x){rollForm.target=x.L;rollForm.inc=!!x.inc;}render();return;}
+  if(k==="who"||k==="mode"){rollForm.weapon="0";const ms=members();const m=isNarr?ms.find(x=>x.id===rollForm.who):ms[0];rollForm.mod=rollForm.mode==="attacco"&&m?(m.s?classBonus(m.s):(+m.h.atk||0)):0;render();}
 });
 document.addEventListener("keydown",e=>{
   if(e.key!=="Enter")return;

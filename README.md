@@ -8,6 +8,10 @@ Tavolo condiviso per giocare a *Four Against the Great Old Ones* con un Narrator
 
 Il libro resta al Narratore: la pagina non contiene i testi di incontri e tabelle.
 
+## Dati dei luoghi
+
+Le meccaniche (indagini con caselle e ritiri, reclute, armi, combattimento guidato) sono nella pagina; i dati specifici di ogni luogo li inserisce il Narratore dal proprio libro la prima volta che il gruppo ci arriva (scheda **Luogo → Configura**). Restano salvati nel database, visibili solo con il codice Narratore, e valgono per tutte le partite successive.
+
 ## Come funziona
 
 - `index.html`: pagina statica servita da GitHub Pages.

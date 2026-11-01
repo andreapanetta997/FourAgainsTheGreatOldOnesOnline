@@ -204,3 +204,8 @@ grant execute on function public.create_game(jsonb), public.narr_get(text), publ
   public.narr_new_code(text, text), public.narr_reset(text, jsonb), public.narr_log(text, text, text, text),
   public.player_get(text), public.player_set_char(text, jsonb), public.player_set_state(text, jsonb), public.player_log(text, text, text)
   to anon, authenticated;
+
+-- ===== stage 1 (migration "tavolo_stage1") =====
+alter table public.games add column if not exists lib jsonb not null default '{}'::jsonb;
+-- narr_get also returns 'lib'; narr_set_lib(p_token, p_patch) deep-merges into lib (narrator only).
+-- player_set_state accepts: last, xp, minions, foes.{id}.n, cres (own defense results stored under combat.cres).
