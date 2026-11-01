@@ -100,7 +100,7 @@ svg.map text{font-family:var(--body);fill:var(--paper)}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.3</span></h1>
+    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.4</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -109,7 +109,7 @@ svg.map text{font-family:var(--body);fill:var(--paper)}
 <nav class="tabs" id="tabs" role="tablist"></nav>
 <main id="main"></main>
 <div id="modal"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script>
 "use strict";
 /* ---------- static game data (stats and map only; encounter texts stay in the book) ---------- */
@@ -240,10 +240,16 @@ function setGame(id){
   leaveGame();gameId=id;
   chan=sb.channel("g-"+id,{config:{broadcast:{self:false},presence:{key:role==="player"?("p-"+uid()):"narr"}}});
   chan.on("broadcast",{event:"ping"},()=>refetchSoon())
+      .on("broadcast",{event:"here"},m=>{const s=m&&m.payload&&m.payload.slot;if(s&&isNarr){const was=isOnline(s);SEEN[s]=Date.now();if(!was)render();}})
+      .on("broadcast",{event:"who"},()=>{if(role==="player")sayHere();})
       .on("presence",{event:"sync"},()=>{const st=chan.presenceState();ONLINE=new Set();Object.values(st).forEach(arr=>arr.forEach(m=>{if(m.slot)ONLINE.add(m.slot);}));if(isNarr)render();})
-      .subscribe(status=>{RT=status;if(status==="SUBSCRIBED"){tracked=null;trackMe();}showConn();});
+      .subscribe(status=>{RT=status;if(status==="SUBSCRIBED"){tracked=null;trackMe();sayHere();if(isNarr)chan.send({type:"broadcast",event:"who",payload:{}}).catch(()=>{});}showConn();});
 }
-let tracked=null,RT="";
+let tracked=null,RT="";const SEEN={};
+// fallback heartbeat over broadcast, in case presence is unavailable: players announce themselves on join, on request and every 25 s
+function sayHere(){if(chan&&role==="player"&&MINE&&RT==="SUBSCRIBED")chan.send({type:"broadcast",event:"here",payload:{slot:MINE.slot}}).catch(()=>{});}
+function isOnline(slot){return ONLINE.has(slot)||(SEEN[slot]&&Date.now()-SEEN[slot]<60000);}
+setInterval(sayHere,25000);
 function showConn(){if(!role)return;if(RT==="SUBSCRIBED")conn("in tempo reale","me");else conn("aggiornamento ogni 15 s","");}
 // announce this player once per connection (re-sent only if the slot changes): repeated track() calls hit Supabase's presence rate limit
 function trackMe(){if(!chan||role!=="player"||!MINE||tracked===MINE.slot)return;tracked=MINE.slot;chan.track({slot:MINE.slot}).catch(()=>{tracked=null;});}
@@ -753,7 +759,7 @@ function viewNarrGroup(){
   const cards=SLOTS.map(k=>{
     const sl=CH[k];const s=sl&&sl.data;
     if(!s||!s.cls)return `<div class="card"><h3>Posto libero</h3><label for="add-${k}">Recluta un investigatore<select id="add-${k}" data-ch="addInv" data-p="${k}">${classOptions("",k,x=>CH[x]&&CH[x].data&&CH[x].data.cls)}</select></label><p class="muted">Reclutare un investigatore costa 2 giorni. Riceverà un codice nuovo.</p></div>`;
-    const on=ONLINE.has(k);
+    const on=isOnline(k);
     return `<div class="card">
       <div class="row sb"><h3>${CL[s.cls].n} <span class="num muted">L${s.lvl}</span></h3>
         <span class="stat">Codice <b class="ok" style="font-size:20px;letter-spacing:.12em">${esc(sl.code)}</b></span></div>
