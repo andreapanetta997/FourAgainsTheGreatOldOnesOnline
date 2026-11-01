@@ -222,8 +222,7 @@ async function refetch(){
       S=merge(freshState(),d.state||{});CH=d.chars||{};RAWLOG=d.log||[];LIB=merge({locs:{}},d.lib||{});setGame(d.game_id);
     }else if(role==="player"&&CODE){
       const d=await rpc("player_get",{p_code:CODE});if(pending)return;
-      S=merge(freshState(),d.state||{});MINE={...d.data,slot:d.slot};if(!rollForm._init){rollForm._init=1;rollForm.mod=classBonus(MINE);}RAWLOG=d.log||[];setGame(d.game_id);
-      if(chan)chan.track({slot:d.slot}).catch(()=>{});
+      S=merge(freshState(),d.state||{});MINE={...d.data,slot:d.slot};setTimeout(trackMe,0);if(!rollForm._init){rollForm._init=1;rollForm.mod=classBonus(MINE);}RAWLOG=d.log||[];setGame(d.game_id);
     }
     conn("in tempo reale","me");mode="ready";
   }catch(e){
@@ -242,9 +241,12 @@ function setGame(id){
   chan=sb.channel("g-"+id,{config:{broadcast:{self:false},presence:{key:role==="player"?("p-"+uid()):"narr"}}});
   chan.on("broadcast",{event:"ping"},()=>refetchSoon())
       .on("presence",{event:"sync"},()=>{const st=chan.presenceState();ONLINE=new Set();Object.values(st).forEach(arr=>arr.forEach(m=>{if(m.slot)ONLINE.add(m.slot);}));if(isNarr)render();})
-      .subscribe(status=>{if(status==="SUBSCRIBED"&&role==="player"&&MINE)chan.track({slot:MINE.slot}).catch(()=>{});});
+      .subscribe(status=>{if(status==="SUBSCRIBED"){tracked=null;trackMe();}});
 }
-function leaveGame(){if(chan){try{sb.removeChannel(chan);}catch(e){}chan=null;}gameId=null;ONLINE=new Set();}
+let tracked=null;
+// announce this player once per connection (re-sent only if the slot changes): repeated track() calls hit Supabase's presence rate limit
+function trackMe(){if(!chan||role!=="player"||!MINE||tracked===MINE.slot)return;tracked=MINE.slot;chan.track({slot:MINE.slot}).catch(()=>{tracked=null;});}
+function leaveGame(){tracked=null;if(chan){try{sb.removeChannel(chan);}catch(e){}chan=null;}gameId=null;ONLINE=new Set();}
 
 /* local-first writes */
 function upd(patch){
