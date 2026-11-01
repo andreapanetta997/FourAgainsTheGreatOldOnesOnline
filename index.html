@@ -100,7 +100,7 @@ svg.map text{font-family:var(--body);fill:var(--paper)}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1>Quattro contro i Grandi Antichi</h1>
+    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.3</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -224,7 +224,7 @@ async function refetch(){
       const d=await rpc("player_get",{p_code:CODE});if(pending)return;
       S=merge(freshState(),d.state||{});MINE={...d.data,slot:d.slot};setTimeout(trackMe,0);if(!rollForm._init){rollForm._init=1;rollForm.mod=classBonus(MINE);}RAWLOG=d.log||[];setGame(d.game_id);
     }
-    conn("in tempo reale","me");mode="ready";
+    showConn();mode="ready";
   }catch(e){
     const msg=String(e&&e.message||"");
     if(/non valido/.test(msg)){
@@ -241,12 +241,13 @@ function setGame(id){
   chan=sb.channel("g-"+id,{config:{broadcast:{self:false},presence:{key:role==="player"?("p-"+uid()):"narr"}}});
   chan.on("broadcast",{event:"ping"},()=>refetchSoon())
       .on("presence",{event:"sync"},()=>{const st=chan.presenceState();ONLINE=new Set();Object.values(st).forEach(arr=>arr.forEach(m=>{if(m.slot)ONLINE.add(m.slot);}));if(isNarr)render();})
-      .subscribe(status=>{if(status==="SUBSCRIBED"){tracked=null;trackMe();}});
+      .subscribe(status=>{RT=status;if(status==="SUBSCRIBED"){tracked=null;trackMe();}showConn();});
 }
-let tracked=null;
+let tracked=null,RT="";
+function showConn(){if(!role)return;if(RT==="SUBSCRIBED")conn("in tempo reale","me");else conn("aggiornamento ogni 15 s","");}
 // announce this player once per connection (re-sent only if the slot changes): repeated track() calls hit Supabase's presence rate limit
 function trackMe(){if(!chan||role!=="player"||!MINE||tracked===MINE.slot)return;tracked=MINE.slot;chan.track({slot:MINE.slot}).catch(()=>{tracked=null;});}
-function leaveGame(){tracked=null;if(chan){try{sb.removeChannel(chan);}catch(e){}chan=null;}gameId=null;ONLINE=new Set();}
+function leaveGame(){tracked=null;RT="";if(chan){try{sb.removeChannel(chan);}catch(e){}chan=null;}gameId=null;ONLINE=new Set();}
 
 /* local-first writes */
 function upd(patch){
