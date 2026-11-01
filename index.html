@@ -100,7 +100,7 @@ svg.map text{font-family:var(--body);fill:var(--paper)}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.4</span></h1>
+    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.5</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -108,7 +108,7 @@ svg.map text{font-family:var(--body);fill:var(--paper)}
 </header>
 <nav class="tabs" id="tabs" role="tablist"></nav>
 <main id="main"></main>
-<div id="modal"></div>
+<div id="modal"></div><div id="dice"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script>
 "use strict";
@@ -177,6 +177,45 @@ function shortest(from,to,pilot){
   return {days:dist[to],path};
 }
 
+
+/* ================= physical or virtual dice ================= */
+let diceReq=null;
+function realMode(){return !!(S&&S.dice==="real");}
+function askNumber(label,min,max,hint,keys){
+  return new Promise((res,rej)=>{diceReq={label,min,max,hint,keys:keys||9,res,rej,other:false,err:""};renderDice();setTimeout(()=>{const b=document.querySelector("#dice .kp button:not([disabled])");if(b)b.focus();},0);});
+}
+async function getD6(label){return realMode()?await askNumber(label,1,6,"Tira un d6 e inserisci il risultato.",6):d6();}
+async function getEx(label){
+  if(!realMode())return rollEx();
+  return [await askNumber(label,1,999,"Tira un d6. Se esce 6 ritira e somma, finché continua a uscire 6. Inserisci il totale.")];
+}
+async function get2d6(label){return realMode()?[await askNumber(label,2,12,"Tira 2d6 e inserisci la somma.",9)]:[d6(),d6()];}
+function renderDice(){
+  const el=$("#dice");if(!el)return;
+  const r=diceReq;if(!r){el.innerHTML="";return;}
+  const keys=Array.from({length:9},(_,i)=>i+1);
+  el.innerHTML=`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="dkT"><div class="card">
+    <h3 id="dkT">${esc(r.label)}</h3><p class="muted">${esc(r.hint)}</p>
+    ${r.other?`<div class="row"><input id="dkIn" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Risultato" placeholder="${r.min}–${r.max}" style="flex:1;font-family:var(--mono);font-size:24px">
+      <button class="pri" data-a="dkOk">Conferma</button></div>${r.err?`<p class="ko">${esc(r.err)}</p>`:""}
+      <div class="row"><button data-a="dkBack">Torna al tastierino</button><button data-a="dkNo">Annulla il tiro</button></div>`
+    :`<div class="kp" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${keys.map(n=>`<button style="min-height:56px;font-family:var(--mono);font-size:24px" data-a="dk" data-p="${n}" ${n<r.min||n>r.max?"disabled":""}>${n}</button>`).join("")}</div>
+      <div class="row">${r.max>9?`<button data-a="dkOther">Altro…</button>`:""}<button data-a="dkNo">Annulla il tiro</button></div>`}
+  </div></div>`;
+  if(r.other){const i=$("#dkIn");if(i)i.focus();}
+}
+function diceDone(v){const r=diceReq;diceReq=null;renderDice();r.res(v);}
+function diceKey(a,p){
+  const r=diceReq;if(!r)return;
+  if(a==="dk"){const n=+p;if(n>=r.min&&n<=r.max)diceDone(n);}
+  else if(a==="dkOther"){r.other=true;r.err="";renderDice();}
+  else if(a==="dkBack"){r.other=false;r.err="";renderDice();}
+  else if(a==="dkNo"){diceReq=null;renderDice();r.rej(new Error("annullato"));}
+  else if(a==="dkOk"){const v=($("#dkIn").value||"").trim();
+    if(!/^[0-9]+$/.test(v)){r.err="Inserisci solo un numero intero, senza segni né decimali.";renderDice();return;}
+    const n=parseInt(v,10);if(n<r.min||n>r.max){r.err=`Il numero deve essere tra ${r.min} e ${r.max}.`;renderDice();return;}
+    diceDone(n);}
+}
 
 /* ---------- backend config (public, safe to ship: all access goes through token-checked functions) ---------- */
 const SB_URL="https://oxpccbmfnbxukgbrdodo.supabase.co";
@@ -291,8 +330,9 @@ const A={
   copyLink(slot){const u=location.origin+location.pathname+"?codice="+CH[slot].code;try{navigator.clipboard.writeText(u).then(()=>{busyMsg="Link copiato: "+u;render();setTimeout(()=>{busyMsg="";render();},3000);});}catch(e){busyMsg=u;render();}},
   newGame(){modal={title:"Chiudere la partita?",text:"La partita in corso termina per tutti: personaggi, codici dei giocatori, giorni, indizi e diario ripartono da zero. Il tuo codice Narratore resta lo stesso.",ok:"Chiudi e ricomincia",fn:()=>{
     const st=freshState();S=st;CH={};RAWLOG=[];tab="gruppo";render();q(()=>rpc("narr_reset",{p_token:TOKEN,p_state:st}));}};render();},
+  setDice(m){if(m!=="real"&&m!=="virtual")return;upd({dice:m});addLog(m==="real"?"Si gioca con i dadi reali.":"Si gioca con i dadi virtuali.");},
   pickRoster(slot,cls){upd({roster:{[slot]:cls||null}});},
-  rollStart(){const r=d6();const loc=STARTS[r-1];upd({loc,last:{who:"",text:"Luogo di partenza",total:r,res:loc,ts:Date.now()}});addLog(`Tiro per la partenza: ${r}, si parte da ${loc}.`);},
+  async rollStart(){let r;try{r=await getD6("Luogo di partenza");}catch(e){return;}const loc=STARTS[r-1];upd({loc,last:{who:"",text:"Luogo di partenza",total:r,res:loc,ts:Date.now()}});addLog(`Tiro per la partenza: ${r}, si parte da ${loc}.`);},
   startGame(){
     SLOTS.forEach(k=>{const c=S.roster[k];if(!c)return;const data=newInv(c);CH[k]={code:"…",data};
       q(async()=>{const code=await rpc("narr_create_char",{p_token:TOKEN,p_slot:k,p_data:data});CH[k]={code,data:CH[k].data};render();});});
@@ -308,7 +348,7 @@ const A={
   stat(slot,f,d){const s=invOf(slot);const mx=f==="life"?maxL(s):maxS(s);const v=Math.min(mx,s[f]+d);invUpd(slot,{[f]:v});
     if(v<=0&&s[f]>0)addLog(`${CL[s.cls].n} è ${f==="life"?"morto":"impazzito"}.`);},
   ctr(slot,k,d){const s=invOf(slot);const c=CL[s.cls].ctr.find(x=>x.k===k);const v=Math.max(0,Math.min(ctrMax(c,s),(s.used[k]||0)+d));invUpd(slot,{used:{[k]:v}});},
-  levelUp(slot){const s=invOf(slot);if(S.xp<1)return;const r=d6();const nm=CL[s.cls].n;
+  async levelUp(slot){const s=invOf(slot);if(S.xp<1)return;let r;try{r=await getD6(`${CL[s.cls].n}: salire di livello (serve più di ${s.lvl})`);}catch(e){return;}const nm=CL[s.cls].n;
     if(r>s.lvl){invUpd(slot,{lvl:s.lvl+1,life:s.life+1});upd({xp:S.xp-1,last:{who:nm,text:"Salire di livello",total:r,res:`Riuscito: L${s.lvl+1}`,ok:true,ts:Date.now()}});addLog(`${nm} tenta di salire di livello: ${r}, ci riesce.`,nm);}
     else{upd({xp:S.xp-1,last:{who:nm,text:"Salire di livello",total:r,res:"Fallito, PE perso",ok:false,ts:Date.now()}});addLog(`${nm} tenta di salire di livello: ${r}, fallisce.`,nm);}},
   addHelper(){const n=Object.values(S.hel).filter(Boolean).length;if(n>=4)return;upd({hel:{["h"+uid()]:{name:"Helper",life:1,lmax:1,san:1,smax:1,note:""}}});},
@@ -321,7 +361,7 @@ const A={
   setLocTo(){if(!travelTo)return;const l=travelTo;travelTo=null;upd({loc:l});addLog(`Il gruppo è ora a ${l}.`);},
   pick(l){if(!isNarr)return;travelTo=l===S.loc?null:l;render();},
   togglePilot(){pilotOn=!pilot();render();},
-  clue(){const k=["c1","c2","c3"].find(k=>S.clues[k]==null);if(!k)return;const r=d6();upd({clues:{[k]:r},last:{who:"",text:"Nuovo indizio",total:r,res:`Indizio ${k.slice(1)}/3`,ts:Date.now()}});addLog(`Nuovo indizio! Tiro: ${r}.`);},
+  async clue(){const k=["c1","c2","c3"].find(k=>S.clues[k]==null);if(!k)return;let r;try{r=await getD6("Nuovo indizio");}catch(e){return;}upd({clues:{[k]:r},last:{who:"",text:"Nuovo indizio",total:r,res:`Indizio ${k.slice(1)}/3`,ts:Date.now()}});addLog(`Nuovo indizio! Tiro: ${r}.`);},
   clueDel(k){upd({clues:{[k]:null}});},
   final(){upd({final:!S.final});addLog(S.final?"L'Incontro finale è cominciato.":"Incontro finale annullato.");},
   minion(d){let m=Math.max(0,S.minions+d),xp=S.xp,n=0;while(m>=10){m-=10;xp++;n++;}upd({minions:m,xp});if(n)addLog(`${n*10} minion sconfitti diventano ${n} PE.`);},
@@ -347,16 +387,17 @@ function members(){
   else if(MINE)out.push({id:MINE.slot,label:CL[MINE.cls].n,s:MINE});
   return out;
 }
-function doRoll(){
+async function doRoll(){try{await doRoll2();}catch(e){}}
+async function doRoll2(){
   const f=rollForm;const ms=members();const m=isNarr?ms.find(x=>x.id===f.who):ms[0];const who=m?m.label:"Narratore";
   let total,dice,res="",text="";
   if(f.mode==="libero"){
     const n={d6:1,"2d6":2,"3d6":3,d3:1,d2:1}[f.expr];dice=[];
-    for(let i=0;i<n;i++){const r=d6();dice.push(f.expr==="d3"?Math.ceil(r/2):f.expr==="d2"?(r<=3?1:2):r);}
+    if(f.expr==="2d6"&&realMode()){dice=await get2d6(`${who}: 2d6`);}else for(let i=0;i<n;i++){const r=await getD6(`${who}: ${f.expr}${n>1?` (dado ${i+1} di ${n})`:""}`);dice.push(f.expr==="d3"?Math.ceil(r/2):f.expr==="d2"?(r<=3?1:2):r);}
     total=dice.reduce((a,b)=>a+b,0)+(+f.mod||0);text=`Tiro libero ${f.expr}${+f.mod?(f.mod>0?"+":"")+f.mod:""}`;
     if(f.expr==="3d6")res=`alto ${Math.max(...dice)}, basso ${Math.min(...dice)}`;
   }else{
-    dice=f.ex?rollEx():[d6()];const wm=m&&m.s?(f.weapon==="u"?-1:((armsOf(m.s)[+f.weapon||0]||{}).mod||0)):(m&&m.h?0:(+f.weapon||0));const mod=(+f.mod||0)+(f.mode==="attacco"?wm:0);
+    const lab={attacco:"attacco",difesa:"difesa",sanita:"test di Sanità",sapere:"test di Sapere",occulto:"test di Occulto"}[f.mode];dice=f.ex?await getEx(`${who}: ${lab}`):[await getD6(`${who}: ${lab}`)];const wm=m&&m.s?(f.weapon==="u"?-1:((armsOf(m.s)[+f.weapon||0]||{}).mod||0)):(m&&m.h?0:(+f.weapon||0));const mod=(+f.mod||0)+(f.mode==="attacco"?wm:0);
     total=dice.reduce((a,b)=>a+b,0)+mod;const T=Math.max(1,+f.target||1);const ms2=mod>=0?"+"+mod:mod;
     if(f.mode==="attacco"){const hits=Math.floor(total/T);const incOk=m&&m.s&&CL[m.s.cls].inc;const w=f.inc&&!incOk?Math.floor(hits/2):hits;
       text=`Attacco vs L${T}${f.inc?" incorporeo":""} (${ms2})`;res=hits===0?"Mancato":`${hits} ${hits>1?"colpi":"colpo"} → ${w} ${w===1?"ferita":"ferite"}`;var _apply=f.fid&&w>0?[f.fid,w]:null;}
@@ -390,6 +431,7 @@ function render(){
   }
   $("#tabs").innerHTML=tabs.map(([k,n])=>`<button role="tab" aria-selected="${tab===k}" data-a="tab" data-p="${k}">${n}</button>`).join("");
   $("#main").innerHTML=(busyMsg?`<p class="banner">${esc(busyMsg)}</p>`:"")+html;
+  renderDice();
   $("#modal").innerHTML=modal?`<div class="modal" role="dialog" aria-modal="true"><div class="card"><h3>${esc(modal.title)}</h3><p>${esc(modal.text)}</p><div class="row"><button class="danger" data-a="modalOk">${esc(modal.ok)}</button><button data-a="modalNo">Annulla</button></div></div></div>`:"";
   if(keep){const el=document.getElementById(keep.id);if(el){el.value=keep.v;el.focus();try{el.setSelectionRange(keep.s,keep.e);}catch(e){}}}
 }
@@ -402,7 +444,7 @@ function renderHeader(){
   const nC=["c1","c2","c3"].filter(k=>S.clues[k]!=null).length;
   $("#stats").innerHTML=`<span class="stat ${S.day>=35&&!S.final?"warn":""}">Giorno <b>${S.day}</b>/40${S.final?" · finale":""}</span>
     <span class="stat">Luogo <b style="font-family:var(--body)">${esc(S.loc||"—")}</b></span>
-    <span class="stat">Indizi <b>${nC}</b>/3</span><span class="stat">Minion <b>${S.minions}</b>/10 · PE <b>${S.xp}</b></span>`;
+    <span class="stat">Indizi <b>${nC}</b>/3</span>${S.dice==="real"?`<span class="stat">Dadi <b style="font-family:var(--body)">reali</b></span>`:""}<span class="stat">Minion <b>${S.minions}</b>/10 · PE <b>${S.xp}</b></span>`;
   const l=S.last;
   $("#lastroll").innerHTML=l?`<span class="big">${esc(l.total)}</span><b>${esc(l.who||"Narratore")}</b> · ${esc(l.text)}${l.res?` · <span class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</span>`:""} <span class="muted">${hhmm(l.ts)}</span>`:"Nessun tiro ancora.";
 }
@@ -467,14 +509,14 @@ const S1={
   delArm(i){locEdit.arms.splice(+i,1);render();},
 
   /* ---------- investigate ---------- */
-  investigate(){
+  async investigate(){
     const L=locData(S.loc);if(!L||S.final)return;
     const newDay=S.day+1;const tm=S.tomorrow&&S.tomorrow.day===newDay&&S.tomorrow.loc===S.loc?(+S.tomorrow.mod||0):0;
     const mod=(+invMod||0)+tm;
     const valid=[];for(let n=L.min;n<=L.max;n++){const b=+L.enc[n]||0;if(b===0||usedOf(S.loc,n)<b)valid.push(n);}
     const sel=helperSel||Object.fromEntries(helpers().map(([k])=>[k,true]));
     const rolls=[];let res=null;
-    if(valid.length){for(let i=0;i<60;i++){const r=d6();const v=Math.max(L.min,Math.min(L.max,r+mod));rolls.push(r);if(valid.includes(v)){res=v;break;}}}
+    if(valid.length){for(let i=0;i<60;i++){let r;try{r=await getD6(i===0?`Indagine a ${S.loc}${mod?` (modificatore ${mod>0?"+":""}${mod})`:""}`:`Incontro già usato: ritira`);}catch(e){return;}const v=Math.max(L.min,Math.min(L.max,r+mod));rolls.push(r);if(valid.includes(v)){res=v;break;}}}
     const patch={day:newDay,tomorrow:null,combat:{helpers:sel},enc:{loc:S.loc,n:res,rolls,mod,ts:Date.now()},
       last:{who:"",text:`Indagine a ${S.loc}`,total:res==null?"—":res,res:res==null?"Nessun evento":`Incontro ${res}`,ts:Date.now()}};
     if(res!=null&&(+L.enc[res]||0)>0)patch.checks={[S.loc]:{[res]:usedOf(S.loc,res)+1}};
@@ -532,13 +574,13 @@ const S1={
     const why=canCarry(s,arm);if(why){alertBox(`${CL[s.cls].n} non può prenderla: ${why}.`);return;}invUpd(slot,{arms:[...armsOf(s),arm]});},
 
   /* ---------- group sanity test ---------- */
-  sanityAll(){
-    const D=Math.max(1,+sanDiff||4);const out=[];const ip={};const hp={};
-    SLOTS.forEach(k=>{const s=invOf(k);if(!alive(s))return;const r=rollEx();const t=r.reduce((a,b)=>a+b,0);const ok=t>=D;
-      if(!ok)invUpd(k,{san:s.san-1});out.push({k,name:CL[s.cls].n,t,ok,kind:"inv"});});
-    const sel=S.combat&&S.combat.helpers||{};
-    helpers().forEach(([k,h])=>{if(sel[k]===false||h.life<=0||!(h.smax>0)||h.san<=0)return;const r=rollEx();const t=r.reduce((a,b)=>a+b,0);const ok=t>=D;
-      if(!ok)hp[k]={san:h.san-1};out.push({k,name:h.name,t,ok,kind:"hel"});});
+  async sanityAll(){
+    const D=Math.max(1,+sanDiff||4);const out=[];const hp={};const sel=S.combat&&S.combat.helpers||{};
+    const who=[];SLOTS.forEach(k=>{const s=invOf(k);if(alive(s))who.push({k,name:CL[s.cls].n,kind:"inv"});});
+    helpers().forEach(([k,h])=>{if(sel[k]===false||h.life<=0||!(h.smax>0)||h.san<=0)return;who.push({k,name:h.name,kind:"hel"});});
+    // collect every roll first: cancelling a physical-dice prompt leaves nothing half applied
+    try{for(const w of who){const r=await getEx(`Test di Sanità ${D}: ${w.name}`);w.t=r.reduce((a,b)=>a+b,0);}}catch(e){return;}
+    who.forEach(w=>{const ok=w.t>=D;if(!ok){if(w.kind==="inv"){const s=invOf(w.k);invUpd(w.k,{san:s.san-1});}else{const h=S.hel[w.k];hp[w.k]={san:h.san-1};}}out.push({k:w.k,name:w.name,t:w.t,ok,kind:w.kind});});
     if(Object.keys(hp).length)upd({hel:hp});
     lastSan={D,out,ts:Date.now()};
     const fails=out.filter(o=>!o.ok).map(o=>o.name);
@@ -560,11 +602,11 @@ const S1={
     upd({combat:{assign:{...clearMap(S.combat.assign),...A2},cres:clearMap(S.combat.cres),flee:!!flee}});
     addLog(flee?"Il gruppo tenta la fuga: i nemici attaccano un'ultima volta.":`Round ${S.combat.round}: i nemici attaccano.`);
   },
-  defend(aid){
+  async defend(aid){
     const a=S.combat.assign[aid];if(!a)return;if(S.combat.cres&&S.combat.cres[aid]&&S.combat.cres[aid].done)return;
     const tgtInv=SLOTS.includes(a.tgt);const s=tgtInv?invOf(a.tgt):S.hel[a.tgt];
     if(!s||s.life<=0){markRes(aid,"annullato (bersaglio fuori gioco)");return;}
-    const r=rollEx();const t=r.reduce((x,y)=>x+y,0);const ok=t>=a.L;
+    let r;try{r=await getEx(`${a.tname}: difesa contro ${a.fname} (serve ${a.L})`);}catch(e){return;}const t=r.reduce((x,y)=>x+y,0);const ok=t>=a.L;
     const res=ok?`Schivato (${t})`:`Colpito (${t}): −${a.dmg} Vita`;
     if(!ok){if(tgtInv)invUpd(a.tgt,{life:Math.max(0,s.life-a.dmg)});else if(isNarr)upd({hel:{[a.tgt]:{life:Math.max(0,s.life-a.dmg)}}});}
     markRes(aid,res);
@@ -734,6 +776,9 @@ function viewSetup(){
   return `<div class="card"><h2>Preparazione</h2>
     <p class="muted">Scegli i 4 investigatori e tira il luogo di partenza. Quando premi Inizia, ogni investigatore riceve un codice da dare al suo giocatore: ognuno vedrà solo la propria scheda.</p>
     <div class="f">${SLOTS.map((k,i)=>`<label for="ros-${k}">Investigatore ${i+1}<select id="ros-${k}" data-ch="roster" data-p="${k}">${classOptions(S.roster[k],k,x=>S.roster[x])}</select></label>`).join("")}</div>
+    <fieldset style="border:1px solid var(--line);border-radius:6px;padding:8px"><legend class="muted">Dadi</legend>
+      <div class="row"><button class="${S.dice!=="real"?"pri":""}" data-a="setDice" data-p="virtual">Dadi virtuali</button><button class="${S.dice==="real"?"pri":""}" data-a="setDice" data-p="real">Dadi reali</button></div>
+      <p class="muted">${S.dice==="real"?"Ognuno tira i propri dadi e inserisce il risultato quando la pagina lo chiede.":"La pagina tira i dadi per tutti."}</p></fieldset>
     <div class="row"><button data-a="rollStart">Tira il luogo di partenza (d6)</button><span>${S.loc?`Partenza: <b>${esc(S.loc)}</b>`:""}</span></div>
     <div class="row"><button class="pri" data-a="startGame" ${ready?"":"disabled"}>Inizia la partita e genera i codici</button></div></div>`;
 }
@@ -768,6 +813,7 @@ function viewNarrGroup(){
       ${sheet(k,s)}</div>`;}).join("");
   const hel=Object.entries(S.hel).filter(([,h])=>h);
   return `<div class="card"><p>Dai a ogni giocatore il link della pagina e il codice del suo investigatore. I giocatori vedono solo la propria scheda; tu vedi e modifichi tutto.</p>
+    <div class="row"><span class="muted">Dadi:</span><button class="sm ${S.dice!=="real"?"pri":""}" data-a="setDice" data-p="virtual">Virtuali</button><button class="sm ${S.dice==="real"?"pri":""}" data-a="setDice" data-p="real">Reali</button></div>
     <p class="muted">Il tuo codice Narratore, per riprendere la partita da un altro dispositivo: <b class="num" style="color:var(--paper)">${esc(TOKEN)}</b> <button class="sm" data-a="copyToken">Copia</button></p></div>
   <div class="grid2">${cards}</div>
   <div class="card"><div class="row sb"><h2>Helper <span class="num muted">${hel.length}/4</span></h2><button data-a="addHelper" ${hel.length>=4?"disabled":""}>Aggiungi helper</button></div>
@@ -881,6 +927,8 @@ const PLAYER_OK=new Set(["stat","ctr","levelUp","roll","note","target","classMod
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-a]");if(!t||t.tagName==="SELECT")return;
   const a=t.dataset.a,p=t.dataset.p,d=+t.dataset.d;
+  if(a.startsWith("dk")){diceKey(a,p);return;}
+  if(diceReq)return;
   if(a==="s1"){const f=t.dataset.f,k=t.dataset.k;if(!role||!S1[f])return;
     if(!isNarr){if(!["defend","dropArm","addArmManual"].includes(f))return;
       if(f==="defend"){const as=S.combat&&S.combat.assign&&S.combat.assign[p];if(!as||!MINE||as.tgt!==MINE.slot)return;}
@@ -919,6 +967,7 @@ document.addEventListener("change",e=>{
 });
 document.addEventListener("input",e=>{
   const t=e.target;
+  if(t.id==="dkIn"){const c=t.value.replace(/[^0-9]/g,"");if(c!==t.value)t.value=c;return;}
   if(t.dataset.le&&locEdit){const path=t.dataset.le.split(".");let o=locEdit;for(let i=0;i<path.length-1;i++)o=o[path[i]];o[path[path.length-1]]=t.value;return;}
   if(t.dataset.s1v){if(t.dataset.s1v==="invMod")invMod=+t.value||0;else sanDiff=+t.value||4;return;}
   if(!t.dataset.rf)return;const k=t.dataset.rf;rollForm[k]=t.type==="checkbox"?t.checked:t.value;
@@ -926,8 +975,10 @@ document.addEventListener("input",e=>{
   if(k==="who"||k==="mode"){rollForm.weapon="0";const ms=members();const m=isNarr?ms.find(x=>x.id===rollForm.who):ms[0];rollForm.mod=rollForm.mode==="attacco"&&m?(m.s?classBonus(m.s):(+m.h.atk||0)):0;render();}
 });
 document.addEventListener("keydown",e=>{
+  if(diceReq&&!diceReq.other&&/^[1-9]$/.test(e.key)){diceKey("dk",e.key);return;}
   if(e.key!=="Enter")return;
   const id=e.target.id;
+  if(id==="dkIn"){e.preventDefault();diceKey("dkOk");return;}
   if(id==="lognote"){e.preventDefault();A.note();}
   if(id==="pcode"){e.preventDefault();A.playerLogin();}
   if(id==="ntok"){e.preventDefault();A.narrLogin();}
