@@ -10,12 +10,12 @@
 <style>
 /* Layout: sticky case-file header + last-roll strip, tabbed single column for phones, two columns on wide screens. Single dark theme by choice. */
 :root{
-  --ink:#121615;        /* background: wet slate */
-  --panel:#1b2120;      /* cards */
-  --line:#2f3936;       /* rules, borders */
+  --ink:#15121c;        /* background: night violet */
+  --panel:rgba(31,26,42,.84);      /* cards */
+  --line:#3a3349;       /* rules, borders */
   --paper:#e6dcc6;      /* main text: aged paper */
-  --muted:#9aa49d;      /* secondary text */
-  --accent:#6fae9c;     /* verdigris */
+  --muted:#a9a1ba;      /* secondary text */
+  --accent:#b9a3f0;     /* pale amethyst */
   --blood:#c4574a;      /* danger, wounds */
   --gold:#d6b25e;       /* success, clues */
   --display:"IM Fell English SC", Georgia, serif;
@@ -29,11 +29,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;min-height:36px}
 button:hover{border-color:var(--accent)}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-button.pri{background:var(--accent);color:#0d1513;border-color:var(--accent);font-weight:700}
+button.pri{background:var(--accent);color:#1a1230;border-color:var(--accent);font-weight:700}
 button.danger{border-color:var(--blood);color:var(--blood)}
 button.sm{min-height:30px;padding:2px 8px;font-size:14px}
 button:disabled{opacity:.4;cursor:default}
-input,select,textarea{background:#0f1312;border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px;width:100%}
+input,select,textarea{background:#120f19;border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px;width:100%}
 textarea{min-height:60px;resize:vertical}
 label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
 h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.02em}
@@ -51,7 +51,7 @@ header.top{position:sticky;top:0;z-index:5;background:var(--ink);border-bottom:1
 .lastroll .big{font-family:var(--mono);font-size:22px;color:var(--gold);margin-right:6px}
 nav.tabs{display:flex;gap:4px;overflow-x:auto;padding:8px 16px 0}
 nav.tabs button{border-radius:6px 6px 0 0;border-bottom:none;white-space:nowrap}
-nav.tabs button[aria-selected="true"]{background:var(--accent);color:#0d1513;border-color:var(--accent);font-weight:700}
+nav.tabs button[aria-selected="true"]{background:var(--accent);color:#1a1230;border-color:var(--accent);font-weight:700}
 main{padding:12px 16px 40px;display:grid;gap:14px;max-width:1100px;margin:0 auto}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .grid2{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
@@ -72,7 +72,7 @@ main{padding:12px 16px 40px;display:grid;gap:14px;max-width:1100px;margin:0 auto
 .ab{margin:0;padding-left:18px;font-size:14px;color:var(--muted)}
 .ctr{display:flex;align-items:center;gap:6px;font-size:14px}
 .ctr .num{min-width:40px;text-align:center}
-.result{font-size:15px;padding:8px 10px;border-radius:6px;background:#0f1312;border:1px solid var(--line)}
+.result{font-size:15px;padding:8px 10px;border-radius:6px;background:#120f19;border:1px solid var(--line)}
 .ok{color:var(--gold)}
 .ko{color:var(--blood)}
 .log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:70vh;overflow-y:auto}
@@ -85,13 +85,22 @@ main{padding:12px 16px 40px;display:grid;gap:14px;max-width:1100px;margin:0 auto
 .checks .loc .bx{display:flex;gap:4px;margin-top:4px}
 .bx button{width:28px;min-height:28px;padding:0;font-family:var(--mono);font-size:13px}
 .bx button.on{background:var(--blood);border-color:var(--blood);color:#fff;text-decoration:line-through}
-svg.map{width:100%;height:auto;background:#0f1312;border:1px solid var(--line);border-radius:8px;touch-action:manipulation}
+svg.map{width:100%;height:auto;background:#120f19;border:1px solid var(--line);border-radius:8px;touch-action:manipulation}
 svg.map text{font-family:var(--body);fill:var(--paper)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .modal .card{max-width:420px;width:100%}
 .banner{border:1px solid var(--gold);color:var(--gold);border-radius:6px;padding:6px 10px;font-size:14px}
 @media (min-width:900px){ main.two{grid-template-columns:1fr 1fr;align-items:start} }
-@media (prefers-reduced-motion:no-preference){ .lastroll{transition:background .3s} .flash{background:#2a2a1c} }
+@media (prefers-reduced-motion:no-preference){ .lastroll{transition:background .3s} .flash{background:#2a2236} }
+
+body::before{content:'';position:fixed;right:-40px;bottom:-40px;width:min(90vw,520px);height:min(90vw,520px);pointer-events:none;z-index:0;opacity:.22;background:no-repeat right bottom/contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><g fill='none' stroke='%23b9a3f0' stroke-linecap='round'><path stroke-width='7' d='M300 400C285 330 345 300 318 230C300 186 255 196 262 228'/><path stroke-width='6' d='M352 400C360 345 392 318 378 270C370 244 350 248 352 262'/><path stroke-width='6' d='M250 400C228 350 182 362 168 320C157 286 190 272 200 296'/><path stroke-width='5' d='M205 400C190 375 140 380 120 356'/><path stroke-width='4' d='M395 330C380 300 395 270 385 240'/><g stroke-width='2' opacity='.55'><path d='M0 352Q40 340 80 352T160 352T240 352T320 352T400 352'/><path d='M0 372Q40 360 80 372T160 372T240 372T320 372T400 372'/><path d='M0 392Q40 380 80 392T160 392T240 392T320 392T400 392'/></g><g fill='%23b9a3f0' stroke='none' opacity='.6'><circle cx='310' cy='300' r='3'/><circle cx='322' cy='262' r='2.5'/><circle cx='190' cy='340' r='2.5'/><circle cx='365' cy='300' r='2'/></g></g></svg>")}
+main,nav.tabs{position:relative;z-index:1}
+.medal{border-radius:50%;border:1.5px solid var(--accent);outline:.5px solid var(--accent);outline-offset:3px;display:inline-flex;align-items:center;justify-content:center;color:var(--accent);flex:none;margin:4px}
+.ico{vertical-align:middle;flex:none}
+.fb{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;flex:none}
+.fb-vermin{background:#2c2a1a;color:#e3d48a}.fb-minion{background:#2e2418;color:#e8b26a}.fb-inc{background:#1a2532;color:#8fc4e8}.fb-boss{background:#3a1a1e;color:#f09595}
+.hcard{display:flex;align-items:center;gap:10px}
+nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -100,7 +109,7 @@ svg.map text{font-family:var(--body);fill:var(--paper)}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.6</span></h1>
+    <h1>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v1.7</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -177,6 +186,27 @@ function shortest(from,to,pilot){
   return {days:dist[to],path};
 }
 
+
+/* ================= original icon set (stroke icons, 24x24) ================= */
+const ICONS={
+  gangster:'<path d="M2.5 16c3 2.6 16 2.6 19 0"/><path d="M6.2 15.6 7 8.6c.6-2 3-1.6 5-2.6 2 1 4.4.6 5 2.6l.8 7"/><path d="M6.7 12.6c2.6 1.1 8 1.1 10.6 0"/><path d="M10 7.6 12 9.4l2-1.8"/>',
+  detective:'<circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 21 21"/><path d="M7.2 9a3 3 0 0 1 2.8-2.8"/>',
+  professore:'<path d="M3 5.5c3-1 6-1 9 .8V20c-3-1.8-6-1.8-9-.8z"/><path d="M21 5.5c-3-1-6-1-9 .8V20c3-1.8 6-1.8 9-.8z"/><path d="M5.5 9h3.5M5.5 12h3.5M15 9h3.5"/>',
+  infermiera:'<path d="M5 9.5c0-3.5 3-5.5 7-5.5s7 2 7 5.5V11H5z"/><path d="M12 5.8v3.6M10.2 7.6h3.6"/><path d="M6.5 11v2.5a5.5 5.5 0 0 0 11 0V11"/><path d="M8 21c.8-1.6 2.2-2.4 4-2.4s3.2.8 4 2.4"/>',
+  medium:'<circle cx="12" cy="10" r="6.2"/><path d="M7.5 20.5h9l-1.6-3.6H9.1z"/><path d="M9.3 8.2a3.4 3.4 0 0 1 2.6-1.7"/><path d="M12 12.5l.5 1 1 .2-.8.7.2 1-.9-.5-.9.5.2-1-.8-.7 1-.2z"/>',
+  occultista:'<path d="M14.5 3.8a8.3 8.3 0 1 0 5.6 13.6A7.2 7.2 0 0 1 14.5 3.8z"/><path d="M17.6 6.5v6M15.4 8.5h4.4"/><path d="M17.6 12.5l-1 2 1 .8 1-.8z"/>',
+  spia:'<path d="M2.8 9.2c3-2 6.2-1.6 9.2.8 3-2.4 6.2-2.8 9.2-.8 0 4.2-2 7.2-5 7.2-2 0-3.2-1.8-4.2-3-1 1.2-2.2 3-4.2 3-3 0-5-3-5-7.2z"/><ellipse cx="8" cy="11.2" rx="1.7" ry="1.1"/><ellipse cx="16" cy="11.2" rx="1.7" ry="1.1"/>',
+  veterano:'<path d="M4.8 14a7.2 7.2 0 0 1 14.4 0"/><path d="M2 14.6c3.2 1.8 16.8 1.8 20 0"/><path d="M8.2 15.6 9 19.5h6l.8-3.9"/><path d="M9 9.5c1-1.4 2-2 3-2"/>',
+  vermin:'<ellipse cx="11" cy="13.5" rx="6" ry="3.8"/><circle cx="17.6" cy="11.6" r="2.4"/><circle cx="18.2" cy="11.2" r=".5"/><path d="M5 13.5c-2.2 0-3.2 2-2.2 4.2"/><path d="M8 17l-1 2.2M13 17.2l.6 2.2"/><path d="M16.6 9.5l-.6-1.6"/>',
+  minion:'<path d="M12 3c-4 0-6.2 4-6.2 8.2V21h12.4v-9.8C18.2 7 16 3 12 3z"/><path d="M9.2 12c1.6-2.4 4-2.4 5.6 0v3.2H9.2z"/><circle cx="10.8" cy="13.2" r=".5"/><circle cx="13.2" cy="13.2" r=".5"/>',
+  inc:'<path d="M6 20.5V10a6 6 0 0 1 12 0v10.5l-2-1.6-2 1.6-2-1.6-2 1.6-2-1.6z"/><circle cx="9.8" cy="10.5" r="1"/><circle cx="14.2" cy="10.5" r="1"/><path d="M10.5 14c1 .7 2 .7 3 0"/>',
+  boss:'<path d="M2.8 8.8c4.2-5.4 14.2-5.4 18.4 0-4.2 5.4-14.2 5.4-18.4 0z"/><circle cx="12" cy="8.8" r="2.4"/><path d="M7 12.6c-1.2 3 1.2 4.2 0 7.6"/><path d="M12 13.8c0 3 2 4.2 1 7.4"/><path d="M17 12.6c1.2 3-1.2 4.2 0 7.6"/>',
+  helper:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20.5c1-4 4-6.2 7-6.2s6 2.2 7 6.2"/>'
+};
+function ico(name,size){return `<svg class="ico" width="${size||20}" height="${size||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||""}</svg>`;}
+function medal(cls,size){const s=size||40;return `<span class="medal" style="width:${s}px;height:${s}px">${ico(cls,Math.round(s*.55))}</span>`;}
+function foeKind(x){return x.inc?"inc":x.kind==="Boss"?"boss":x.kind==="Vermin"?"vermin":"minion";}
+function foeBadge(x){const k=foeKind(x);return `<span class="fb fb-${k}">${ico(k,18)}</span>`;}
 
 /* ================= physical or virtual dice ================= */
 let diceReq=null;
@@ -455,13 +485,13 @@ function render(){
       html=({luogo:viewLocation,gruppo:viewNarrGroup,dadi:viewDice,combatt:()=>combatGuide()+viewCombat(),mappa:viewMap,diario:viewLog}[tab])();}
   }else{
     if(S.phase!=="play"||!MINE)html=`<div class="card"><h2>In attesa del Narratore</h2><p class="muted">La partita non è ancora cominciata.</p></div>`;
-    else{const mine=mySlots().map(k=>["c-"+k,CL[MY[k].cls].n]);
+    else{const mine=mySlots().map(k=>["c-"+k,CL[MY[k].cls].n,MY[k].cls]);
       tabs=[...mine,["dadi","Dadi"],["tavolo","Tavolo"],["diario","Diario"]];
       if(tab==="pg"||!tabs.some(t=>t[0]===tab))tab="c-"+ACT;
       if(tab.startsWith("c-")){ACT=tab.slice(2);MINE=MY[ACT];}
       html=tab.startsWith("c-")?myDefenses()+viewMine():({dadi:()=>myDefenses()+viewDice(),tavolo:viewTable,diario:viewLog}[tab])();}
   }
-  $("#tabs").innerHTML=tabs.map(([k,n])=>`<button role="tab" aria-selected="${tab===k}" data-a="tab" data-p="${k}">${n}</button>`).join("");
+  $("#tabs").innerHTML=tabs.map(([k,n,ic])=>`<button role="tab" aria-selected="${tab===k}" data-a="tab" data-p="${k}">${ic?ico(ic,16):""}${n}</button>`).join("");
   $("#main").innerHTML=(busyMsg?`<p class="banner">${esc(busyMsg)}</p>`:"")+html;
   renderDice();
   $("#modal").innerHTML=modal?`<div class="modal" role="dialog" aria-modal="true"><div class="card"><h3>${esc(modal.title)}</h3><p>${esc(modal.text)}</p><div class="row"><button class="danger" data-a="modalOk">${esc(modal.ok)}</button><button data-a="modalNo">Annulla</button></div></div></div>`:"";
@@ -705,7 +735,7 @@ function viewLocation(){
   ${encCard()}
   <div class="card"><h3>Reclutare</h3>
     ${L.rec.length?L.rec.map(r=>{const u=recUsed(S.loc,r.id),b=+r.boxes||1,left=b-u;
-      const label=r.kind==="inv"?(CL[r.cls]?CL[r.cls].n:"?"):`${esc(r.name)} <span class="muted">Vita ${r.life}, San ${r.san}${+r.atk?`, +${r.atk} att.`:""}</span>`;
+      const label=r.kind==="inv"?(CL[r.cls]?`${ico(r.cls,18)} ${CL[r.cls].n}`:"?"):`${ico("helper",18)} ${esc(r.name)} <span class="muted">Vita ${r.life}, San ${r.san}${+r.atk?`, +${r.atk} att.`:""}</span>`;
       return `<div class="enemy"><div><b>${label}</b> <span class="muted">· ${r.days||(r.kind==="inv"?2:1)} g · ${"■".repeat(u)}${"□".repeat(Math.max(0,left))}</span>${r.note?`<br><span class="muted">${esc(r.note)}</span>`:""}</div>
         <div class="row">${r.kind==="hel"&&+r.max>+r.min?`<select id="rc-${r.id}" aria-label="quanti" style="width:70px">${Array.from({length:+r.max-+r.min+1},(_,i)=>`<option>${+r.min+i}</option>`).join("")}</select>`:""}
         ${r.kind==="inv"&&spy?`<label style="flex-direction:row;align-items:center;gap:4px" for="spy-${r.id}"><input id="spy-${r.id}" type="checkbox" style="width:auto;min-height:0">Spia (1 g)</label>`:""}
@@ -733,7 +763,7 @@ function encCard(){
 }
 function viewEquip(L){
   return SLOTS.filter(k=>invOf(k)).map(k=>{const s=invOf(k);const a=armsOf(s);
-    return `<div class="card" style="background:#161b1a"><b>${CL[s.cls].n}</b> <span class="muted">(${a.length}/${maxArms(s)}, preferite: ${PREF[s.cls].split("").map(c=>CAT[c]).join(", ")})</span>
+    return `<div class="card" style="background:#1a1624"><b>${CL[s.cls].n}</b> <span class="muted">(${a.length}/${maxArms(s)}, preferite: ${PREF[s.cls].split("").map(c=>CAT[c]).join(", ")})</span>
       <div class="row">${a.map((w,i)=>`<span class="stat">${esc(w.name)} <span class="muted">${CAT[w.cat]}</span><button class="sm" data-a="s1" data-f="dropArm" data-p="${k}" data-k="${i}" aria-label="lascia">×</button></span>`).join("")}</div>
       <div class="row">${L.arms.map((w,i)=>{const why=canCarry(s,mkArm(w.name,w.cat));return `<button class="sm" data-a="s1" data-f="take" data-p="${k}" data-k="${i}" ${why?`disabled title="${esc(why)}"`:""}>Prendi ${esc(w.name)}</button>`;}).join("")}</div></div>`;}).join("")
     +`<div class="row"><button class="pri" data-a="s1" data-f="equipClose">Fine equipaggiamento</button></div>`;
@@ -748,12 +778,12 @@ function viewLocEdit(){
     <label for="le-note">Bonus del luogo sul tiro (nota)<input id="le-note" data-le="note" value="${esc(e.note)}"></label>
     <label for="le-rest">Riposo (nota)<input id="le-rest" data-le="rest" value="${esc(e.rest)}"></label>
     <h3>Reclute</h3>
-    ${e.rec.map((r,i)=>r.kind==="inv"?`<div class="card" style="background:#161b1a"><div class="f">
+    ${e.rec.map((r,i)=>r.kind==="inv"?`<div class="card" style="background:#1a1624"><div class="f">
         <label for="le-r${i}c">Investigatore<select id="le-r${i}c" data-le="rec.${i}.cls">${opt(r.cls,[["","—"],...Object.entries(CL).map(([k,c])=>[k,c.n])])}</select></label>
         <label for="le-r${i}d">Giorni<input id="le-r${i}d" type="number" data-le="rec.${i}.days" value="${r.days}"></label>
         <label for="le-r${i}b">Caselle<input id="le-r${i}b" type="number" min="1" data-le="rec.${i}.boxes" value="${r.boxes}"></label></div>
         <div class="row"><button class="sm danger" data-a="s1" data-f="delRec" data-p="${i}">Togli</button></div></div>`
-      :`<div class="card" style="background:#161b1a"><div class="f">
+      :`<div class="card" style="background:#1a1624"><div class="f">
         <label for="le-r${i}n">Helper<input id="le-r${i}n" data-le="rec.${i}.name" value="${esc(r.name)}"></label>
         <label for="le-r${i}mi">Quanti da<input id="le-r${i}mi" type="number" min="1" data-le="rec.${i}.min" value="${r.min}"></label>
         <label for="le-r${i}ma">a<input id="le-r${i}ma" type="number" min="1" data-le="rec.${i}.max" value="${r.max}"></label>
@@ -786,7 +816,7 @@ function combatGuide(){
   return `<div class="card"><div class="row sb"><h2>Round ${c.round||1}</h2><button class="sm ${c.init?"pri":""}" data-a="s1" data-f="toggleInit">${c.init?"Nemici con l'iniziativa":"Iniziativa al gruppo"}</button></div>
     <p class="muted">${c.init?"Prima la difesa, poi l'attacco.":"Prima l'attacco (ognuno dalla scheda Dadi, scegliendo il bersaglio), poi la difesa."}</p>
     ${hel.length?`<div class="row"><span class="muted">Helper in combattimento:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]!==false?"pri":""}" data-a="s1" data-f="toggleHel" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
-    ${as.length?`<h3>${c.flee?"Fuga: ultimo attacco dei nemici":"Difesa"}</h3>${as.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span><b>${esc(a.tname)}</b> ← ${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="sm" data-a="s1" data-f="defend" data-p="${k}">Difendi</button>`}</div>`;}).join("")}`:""}
+    ${as.length?`<h3>${c.flee?"Fuga: ultimo attacco dei nemici":"Difesa"}</h3>${as.map(([k,a])=>{const r=cr[k];const fx=S.foes[a.fid]||{kind:a.boss?"Boss":"Minion"};const ti=SLOTS.includes(a.tgt)&&invOf(a.tgt)?ico(invOf(a.tgt).cls,18):ico("helper",18);return `<div class="row sb"><span class="hcard">${ti}<b>${esc(a.tname)}</b> ← ${foeBadge(fx)} ${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="sm" data-a="s1" data-f="defend" data-p="${k}">Difendi</button>`}</div>`;}).join("")}`:""}
     <div class="row">${!as.length?`<button data-a="s1" data-f="assign">Fase di difesa: assegna gli attacchi</button>`:""}
       ${done&&!c.flee?`<button class="pri" data-a="s1" data-f="nextRound">Round successivo</button>`:""}
       ${done&&c.flee?`<button class="pri" data-a="s1" data-f="endFlee">Concludi la fuga</button>`:""}
@@ -796,7 +826,7 @@ function combatGuide(){
 function myDefenses(){
   const c=S.combat||{};if(!c.on||!MINE)return "";const cr=c.cres||{};
   const mine=Object.entries(c.assign||{}).filter(([,a])=>a&&MY[a.tgt]);if(!mine.length)return "";const many=mySlots().length>1;
-  return `<div class="card" style="border-color:var(--blood)"><h3>Ti stanno attaccando</h3>${mine.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${many?`<b>${esc(a.tname)}</b> ← `:""}${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="pri sm" data-a="s1" data-f="defend" data-p="${k}">Difenditi</button>`}</div>`;}).join("")}</div>`;
+  return `<div class="card" style="border-color:var(--blood)"><h3>Ti stanno attaccando</h3>${mine.map(([k,a])=>{const r=cr[k];const fx=S.foes[a.fid]||{kind:a.boss?"Boss":"Minion"};return `<div class="row sb"><span class="hcard">${many?`${ico(MY[a.tgt].cls,18)}<b>${esc(a.tname)}</b> ← `:""}${foeBadge(fx)} ${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="pri sm" data-a="s1" data-f="defend" data-p="${k}">Difenditi</button>`}</div>`;}).join("")}</div>`;
 }
 
 function classOptions(sel,slot,source){
@@ -807,7 +837,7 @@ function viewSetup(){
   const ready=SLOTS.every(k=>S.roster[k])&&S.loc;
   return `<div class="card"><h2>Preparazione</h2>
     <p class="muted">Scegli i 4 investigatori e tira il luogo di partenza. Quando premi Inizia, ogni investigatore riceve un codice da dare al suo giocatore: ognuno vedrà solo la propria scheda.</p>
-    <div class="f">${SLOTS.map((k,i)=>`<label for="ros-${k}">Investigatore ${i+1}<select id="ros-${k}" data-ch="roster" data-p="${k}">${classOptions(S.roster[k],k,x=>S.roster[x])}</select></label>`).join("")}</div>
+    <div class="f">${SLOTS.map((k,i)=>`<div class="hcard">${S.roster[k]?medal(S.roster[k],36):`<span class="medal" style="width:36px;height:36px;opacity:.35"></span>`}<label for="ros-${k}" style="flex:1">Investigatore ${i+1}<select id="ros-${k}" data-ch="roster" data-p="${k}">${classOptions(S.roster[k],k,x=>S.roster[x])}</select></label></div>`).join("")}</div>
     <fieldset style="border:1px solid var(--line);border-radius:6px;padding:8px"><legend class="muted">Dadi</legend>
       <div class="row"><button class="${S.dice!=="real"?"pri":""}" data-a="setDice" data-p="virtual">Dadi virtuali</button><button class="${S.dice==="real"?"pri":""}" data-a="setDice" data-p="real">Dadi reali</button></div>
       <p class="muted">${S.dice==="real"?"Ognuno tira i propri dadi e inserisce il risultato quando la pagina lo chiede.":"La pagina tira i dadi per tutti."}</p></fieldset>
@@ -839,7 +869,7 @@ function viewNarrGroup(){
     const on=isOnline(k);const own=sl.owner&&CH[sl.owner]&&CH[sl.owner].data?CL[CH[sl.owner].data.cls].n:"";
     const devs=presentDevs().filter(([,d])=>!d.slots.includes(k));
     return `<div class="card">
-      <div class="row sb"><h3>${CL[s.cls].n} <span class="num muted">L${s.lvl}</span></h3>
+      <div class="row sb"><h3 class="hcard">${medal(s.cls,42)}<span>${CL[s.cls].n} <span class="num muted">L${s.lvl}</span></span></h3>
         <span class="stat">Codice <b class="ok" style="font-size:20px;letter-spacing:.12em">${esc(sl.code)}</b></span></div>
       ${own?`<div class="row"><span class="chip me">affidato al giocatore di ${esc(own)}</span><button class="sm" data-a="unassign" data-p="${k}">Togli</button></div>`:""}
       ${!on&&!own&&devs.length?`<label for="as-${k}">Assegna a un giocatore presente<select id="as-${k}" data-ch="assign" data-p="${k}"><option value="">— scegli —</option>${devs.map(([,d])=>`<option value="${d.slots[0]}">${esc(d.slots.map(s=>CH[s]&&CH[s].data?CL[CH[s].data.cls].n:s).join(" + "))}</option>`).join("")}</select></label>`:""}
@@ -852,7 +882,8 @@ function viewNarrGroup(){
     <p class="muted">Il tuo codice Narratore, per riprendere la partita da un altro dispositivo: <b class="num" style="color:var(--paper)">${esc(TOKEN)}</b> <button class="sm" data-a="copyToken">Copia</button></p></div>
   <div class="grid2">${cards}</div>
   <div class="card"><div class="row sb"><h2>Helper <span class="num muted">${hel.length}/4</span></h2><button data-a="addHelper" ${hel.length>=4?"disabled":""}>Aggiungi helper</button></div>
-    ${hel.length?hel.map(([k,h])=>`<div class="card" style="background:#161b1a">
+    ${hel.length?hel.map(([k,h])=>`<div class="card" style="background:#1a1624">
+      <div class="hcard">${medal("helper",30)}<b>${esc(h.name)}</b></div>
       <div class="f"><label for="hn-${k}">Nome<input id="hn-${k}" data-htx="name" data-p="${k}" value="${esc(h.name)}"></label>
       <label for="hl-${k}">Vita max<input id="hl-${k}" type="number" min="1" data-hnum="lmax" data-p="${k}" value="${h.lmax}"></label>
       <label for="hs-${k}">Sanità max<input id="hs-${k}" type="number" min="0" data-hnum="smax" data-p="${k}" value="${h.smax}"></label></div>
@@ -870,15 +901,15 @@ function cluesCard(ctl){
 }
 function viewCodeEntry(){return "";}
 function viewMine(){
-  return `<div class="card"><div class="row sb"><h2>${CL[MINE.cls].n} <span class="num muted">L${MINE.lvl}</span></h2><span class="chip me">solo tu vedi questa scheda</span></div>${sheet(MINE.slot,MINE)}</div>
+  return `<div class="card"><div class="row sb"><h2 class="hcard">${medal(MINE.cls,48)}<span>${CL[MINE.cls].n} <span class="num muted">L${MINE.lvl}</span></span></h2><span class="chip me">solo tu vedi questa scheda</span></div>${sheet(MINE.slot,MINE)}</div>
   <div class="card"><h3>Controlli anche un altro personaggio?</h3><p class="muted">Il Narratore può affidartelo dalla sua pagina, oppure puoi inserire qui il suo codice.</p>
     <div class="row"><input id="addcode" maxlength="8" autocomplete="off" autocapitalize="characters" aria-label="Codice di un altro personaggio" placeholder="CODICE" style="flex:1;font-family:var(--mono);letter-spacing:.15em;text-transform:uppercase"><button data-a="addCode">Aggiungi</button></div></div>
   <p class="muted">Gli altri giocatori non vedono la tua Vita, la tua Sanità né il tuo equipaggiamento. Se vuoi che lo sappiano, diglielo.</p>`;
 }
 function viewTable(){
   const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);const hel=Object.entries(S.hel).filter(([,h])=>h);
-  return `<div class="card"><h2>Nemici in campo${S.combat&&S.combat.on?` · round ${S.combat.round||1}`:""}</h2>${foes.length?foes.map(([,x])=>`<div class="enemy"><div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${x.kind}${x.inc?" · incorporeo":""}</span></div><div class="num">${x.n}${x.kind==="Boss"?" Vita":" rimasti"}</div></div>`).join(""):`<p class="muted">Nessun nemico.</p>`}</div>
-  <div class="card"><h2>Helper del gruppo</h2>${hel.length?hel.map(([,h])=>`<div class="row sb"><span><b>${esc(h.name)}</b> <span class="muted">${esc(h.note)}</span></span><span class="num">Vita ${h.life}/${h.lmax} · San ${h.san}/${h.smax}</span></div>`).join(""):`<p class="muted">Nessun helper.</p>`}</div>
+  return `<div class="card"><h2>Nemici in campo${S.combat&&S.combat.on?` · round ${S.combat.round||1}`:""}</h2>${foes.length?foes.map(([,x])=>`<div class="enemy"><div class="hcard">${foeBadge(x)}<div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${x.kind}${x.inc?" · incorporeo":""}</span></div></div><div class="num">${x.n}${x.kind==="Boss"?" Vita":" rimasti"}</div></div>`).join(""):`<p class="muted">Nessun nemico.</p>`}</div>
+  <div class="card"><h2>Helper del gruppo</h2>${hel.length?hel.map(([,h])=>`<div class="row sb"><span class="hcard">${ico("helper",18)}<b>${esc(h.name)}</b> <span class="muted">${esc(h.note)}</span></span><span class="num">Vita ${h.life}/${h.lmax} · San ${h.san}/${h.smax}</span></div>`).join(""):`<p class="muted">Nessun helper.</p>`}</div>
   ${cluesCard(false)}
   <div class="card"><h2>Mappa</h2>${mapSvg(null)}</div>`;
 }
@@ -909,8 +940,8 @@ function viewDice(){
 function viewCombat(){
   const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name);
   return `<div class="card"><div class="row sb"><h2>Nemici</h2>${foes.length?`<button class="danger sm" data-a="endCombat">Fine combattimento</button>`:""}</div>
-    ${foes.length?foes.map(([k,x])=>`<div class="enemy"><div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${x.kind}${x.inc?" · incorporeo":""}</span><br>
-      <span class="muted">${x.kind==="Boss"?"Vita":"Rimasti"}:</span> <span class="num ${x.n===0?"ko":""}">${x.n}</span><span class="muted num"> / ${x.n0}</span>${x.kind==="Vermin"&&x.n>0&&x.n<x.n0/2?` <span class="chip dead">fuggono</span>`:""}</div>
+    ${foes.length?foes.map(([k,x])=>`<div class="enemy"><div class="hcard">${foeBadge(x)}<div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${x.kind}${x.inc?" · incorporeo":""}</span><br>
+      <span class="muted">${x.kind==="Boss"?"Vita":"Rimasti"}:</span> <span class="num ${x.n===0?"ko":""}">${x.n}</span><span class="muted num"> / ${x.n0}</span>${x.kind==="Vermin"&&x.n>0&&x.n<x.n0/2?` <span class="chip dead">fuggono</span>`:""}</div></div>
       <div class="row"><button data-a="foe" data-p="${k}" data-d="-1">${x.kind==="Boss"?"−1 Vita":"−1 sconfitto"}</button><button class="sm" data-a="foe" data-p="${k}" data-d="1" aria-label="aggiungi">+</button><button class="sm" data-a="delFoe" data-p="${k}" aria-label="togli">×</button></div></div>`).join(""):`<p class="muted">Nessun nemico in campo. I giocatori vedono i nemici nella scheda Tavolo.</p>`}
   </div>
   <div class="card"><h3>Aggiungi nemici</h3><div class="f">
@@ -927,10 +958,10 @@ function mapSvg(r){
   const onPath=new Set();if(r)for(let i=0;i<r.path.length-1;i++){onPath.add(r.path[i]+"|"+r.path[i+1]);onPath.add(r.path[i+1]+"|"+r.path[i]);}
   let svg=`<svg class="map" viewBox="120 190 960 1240" role="img" aria-label="Mappa dei luoghi con i giorni di viaggio">`;
   EDGES.forEach(([a,b,d])=>{const [x1,y1]=POS[a],[x2,y2]=POS[b];const hot=onPath.has(a+"|"+b);
-    svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${hot?"#d6b25e":"#3d4a46"}" stroke-width="${hot?7:3}"/><text x="${(x1+x2)/2+8}" y="${(y1+y2)/2-6}" font-size="28" style="fill:${hot?"#d6b25e":"#9aa49d"}">${d}</text>`;});
+    svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${hot?"#d6b25e":"#463d58"}" stroke-width="${hot?7:3}"/><text x="${(x1+x2)/2+8}" y="${(y1+y2)/2-6}" font-size="28" style="fill:${hot?"#d6b25e":"#a9a1ba"}">${d}</text>`;});
   if(r)for(let i=0;i<r.path.length-1;i++){const a=r.path[i],b=r.path[i+1];if(!EDGES.some(([x,y])=>(x===a&&y===b)||(x===b&&y===a))){const [x1,y1]=POS[a],[x2,y2]=POS[b];svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#d6b25e" stroke-width="5" stroke-dasharray="14 10"/>`;}}
   LOCS.forEach(l=>{const [x,y]=POS[l];const cur=l===S.loc,dst=l===travelTo;
-    svg+=`<g data-a="pick" data-p="${esc(l)}" style="cursor:${isNarr?"pointer":"default"}"><circle cx="${x}" cy="${y}" r="${cur?22:16}" fill="${cur?"#6fae9c":dst?"#d6b25e":"#1b2120"}" stroke="${AIR.includes(l)?"#e6dcc6":"#6fae9c"}" stroke-width="${AIR.includes(l)?4:3}"/><text x="${x}" y="${y-28}" font-size="30" text-anchor="middle" style="font-weight:${cur?700:400}">${esc(l)}</text></g>`;});
+    svg+=`<g data-a="pick" data-p="${esc(l)}" style="cursor:${isNarr?"pointer":"default"}"><circle cx="${x}" cy="${y}" r="${cur?22:16}" fill="${cur?"#b9a3f0":dst?"#d6b25e":"#1f1a2a"}" stroke="${AIR.includes(l)?"#e6dcc6":"#b9a3f0"}" stroke-width="${AIR.includes(l)?4:3}"/><text x="${x}" y="${y-28}" font-size="30" text-anchor="middle" style="font-weight:${cur?700:400}">${esc(l)}</text></g>`;});
   return svg+`</svg>`;
 }
 function viewMap(){
