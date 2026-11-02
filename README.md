@@ -22,3 +22,7 @@ Le meccaniche (indagini con caselle e ritiri, reclute, armi, combattimento guida
 
 - Il progetto Supabase gratuito va in pausa dopo 7 giorni senza attività: prima di giocare, se serve, riattivalo dalla dashboard.
 - La chiave nel file è quella pubblica (anon), pensata per stare nel browser.
+
+## Crediti della mappa
+
+Lo sfondo della mappa usa dati di pubblico dominio: le terre emerse di [Natural Earth](https://www.naturalearthdata.com/) (tramite `world-atlas`) e i confini degli Stati del [US Census Bureau](https://www.census.gov/) (tramite `us-atlas`), deformati per adattarsi allo schema del gioco.
