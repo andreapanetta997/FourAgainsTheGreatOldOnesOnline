@@ -118,8 +118,8 @@ nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 .toprow h1{display:flex;align-items:center;gap:8px}
 .landing-logo{display:flex;justify-content:center;padding:8px 0}
 .scr{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
-@media (min-width:900px){.scr{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:'stage stage stage' 'days loc map' 'clues roll map' 'party party map' 'done done map'}
-.scr-stage{grid-area:stage}.scr-top{grid-area:days}.scr-loc{grid-area:loc}.scr-clues{grid-area:clues}.scr-roll{grid-area:roll}.scr-party{grid-area:party}.scr-map{grid-area:map}.scr-done{grid-area:done}}
+@media (min-width:900px){.scr{grid-template-columns:minmax(0,2fr) minmax(0,3fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:'stage stage' 'left map'}
+.scr-stage{grid-area:stage}.scr-left{grid-area:left}.scr-map{grid-area:map}}
 .scr .card{gap:6px}
 .scr-days{display:flex;align-items:baseline;gap:8px}.scr-days b{font-size:64px;line-height:1;color:var(--paper)}
 .scr-bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}.scr-bar span{display:block;height:100%;background:var(--blood)}
@@ -143,7 +143,6 @@ body.screen-mode main{max-width:none}
 .scr-atk-col{border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:2px;font-size:14px}
 .scr-doneline{display:flex;align-items:center;gap:10px;white-space:nowrap;padding:2px 0}.scr-doneline b{min-width:140px}
 .scr-done{min-width:0}
-.scr-map svg{max-height:calc(100vh - 130px)}
 .scr-nums{display:flex;gap:6px}
 @media (prefers-reduced-motion:no-preference){.scr-foe svg{animation:loom 4s ease-in-out infinite}@keyframes loom{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}}
 body.screen-mode{overflow:hidden}
@@ -151,6 +150,16 @@ body.screen-mode{overflow:hidden}
 .scr-days b{font-size:84px}.scr-big{font-size:46px}.scr-clue{width:56px;height:56px;font-size:26px}
 .scr-doneline b{font-size:17px}.scr-num{min-width:36px;height:36px;font-size:18px}
 .scr-roll .scr-big{font-size:56px}
+.scr-left{display:flex;flex-direction:column;gap:12px;min-width:0}
+.scr-status{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+.scr-cell{display:flex;flex-direction:column;gap:4px;min-width:0}
+.scr-partyrow{display:flex;flex-wrap:wrap;gap:10px 14px}
+.scr-done{flex:1}
+.scr-donewrap{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.scr-donechip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.scr-donechip b{margin-right:2px}
+.scr-map{display:flex;flex-direction:column;min-height:0}
+.scr-map svg.map{flex:1 1 0;width:100%;height:auto;min-height:0}
+@media (min-width:900px){.scr{height:100%}.scr-left{min-height:0}}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -159,7 +168,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.2.2</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.2.3</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -1003,31 +1012,38 @@ function viewScreen(){
       return Object.entries(g).map(([t,o])=>{const ic=PARTY[t]&&PARTY[t].cls?ico(PARTY[t].cls,18):ico("helper",18);
         return `<div class="scr-atk-col"><div class="hcard"><b>${ic} ${esc(o.name)}</b></div>${o.list.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${esc(a.fname)}</span><span class="${r&&r.done?(/Schivato/.test(r.res)?"ok":"ko"):"muted"}">${r&&r.done?(/Schivato/.test(r.res)?"schivato":"colpito"):"…"}</span></div>`;}).join("")}</div>`;}).join("");})()}</div>`:""}
   </section>`:"";
+  const doneHtml=visited.length?visited.map(([l2,a])=>`<span class="scr-donechip"><b>${esc(l2)}</b>${a.map(n=>`<span class="scr-num">${esc(n)}</span>`).join("")}</span>`).join(""):`<span class="muted">Ancora nessuno.</span>`;
   return `<div class="scr">${stage}
-  <section class="scr-top card">
-    <div class="scr-days"><span class="muted">Giorno</span><b class="num">${S.day}</b><span class="muted">/ 40</span></div>
-    <div class="scr-bar"><span style="width:${pct}%"></span></div>
-    <div class="row sb"><span>${S.final?`<b class="ok">Incontro finale in corso</b>`:`${daysLeft} giorni al rituale`}</span><span class="muted">${S.dice==="real"?"dadi reali":"dadi virtuali"}</span></div>
-  </section>
-  <section class="scr-loc card"><span class="muted">Luogo</span><b class="scr-big">${esc(S.loc||"—")}</b></section>
-  <section class="scr-clues card"><span class="muted">Indizi</span><div class="row">${clues.map(v=>`<span class="scr-clue ${v!=null?"on":""}">${v!=null?v:"?"}</span>`).join("")}</div>
-    <span class="muted">PE <b class="num">${S.xp}</b> · minion <b class="num">${S.minions}</b>/10</span></section>
-  <section class="scr-roll card"><span class="muted">Ultimo tiro</span>${l?`<div><span class="scr-big num ok">${esc(l.total)}</span> <b>${esc(l.who||"Narratore")}</b></div><div class="muted">${esc(l.text)}</div>${l.res?`<div class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</div>`:""}`:`<div class="muted">nessuno</div>`}</section>
-  <section class="scr-party card"><h3>Il gruppo</h3><div class="row">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,52)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}</div>
-    ${hel.length?`<div class="row">${hel.map(([,h])=>`<span class="stat">${ico("helper",16)} ${esc(h.name)}${h.life<=0||(h.smax>0&&h.san<=0)?" ✕":""}</span>`).join("")}</div>`:""}</section>
+  <div class="scr-left">
+    <section class="scr-status card">
+      <div class="scr-cell"><span class="muted">Giorno</span><div class="scr-days"><b class="num">${S.day}</b><span class="muted">/ 40</span></div>
+        <div class="scr-bar"><span style="width:${pct}%"></span></div><span>${S.final?`<b class="ok">Incontro finale in corso</b>`:`${daysLeft} giorni al rituale`}</span></div>
+      <div class="scr-cell"><span class="muted">Luogo</span><b class="scr-big">${esc(S.loc||"—")}</b><span class="muted">${S.dice==="real"?"dadi reali":"dadi virtuali"}</span></div>
+      <div class="scr-cell"><span class="muted">Indizi</span><div class="row">${clues.map(v=>`<span class="scr-clue ${v!=null?"on":""}">${v!=null?v:"?"}</span>`).join("")}</div>
+        <span class="muted">PE <b class="num">${S.xp}</b> · minion <b class="num">${S.minions}</b>/10</span></div>
+      <div class="scr-cell"><span class="muted">Ultimo tiro</span>${l?`<div><span class="scr-big num ok">${esc(l.total)}</span> <b>${esc(l.who||"Narratore")}</b></div><span class="muted">${esc(l.text)}</span>${l.res?`<span class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</span>`:""}`:`<span class="muted">nessuno</span>`}</div>
+    </section>
+    <section class="scr-party card"><h3>Il gruppo</h3><div class="scr-partyrow">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,64)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}
+      ${hel.map(([,h])=>`<div class="scr-inv ${h.life<=0||(h.smax>0&&h.san<=0)?"out":""}">${medal("helper",48)}<span>${esc(h.name)}</span><span class="muted">helper</span></div>`).join("")}</div></section>
+    <section class="scr-done card"><h3>Incontri già usciti</h3><div class="scr-donewrap">${doneHtml}</div></section>
+  </div>
   <section class="scr-map card"><h3>Mappa</h3>${mapSvg(null)}</section>
-  <section class="scr-done card"><h3>Incontri già usciti</h3>${visited.length?visited.map(([l2,a])=>`<div class="scr-doneline"><b>${esc(l2)}</b><span class="scr-nums">${a.map(n=>`<span class="scr-num">${esc(n)}</span>`).join("")}</span></div>`).join(""):`<p class="muted">Ancora nessuno.</p>`}</section>
   </div>`;
 }
 
-// the table screen is never touched: shrink the whole view so it always fits the display, no scrolling
 function fitScreen(){
-  const m=$("#main");if(!m)return;
-  if(role!=="screen"){m.style.transform="";m.style.width="";m.style.maxWidth="";return;}
-  const head=document.querySelector("header.top");const avail=window.innerHeight-(head?head.offsetHeight:0)-6;const W=document.documentElement.clientWidth;
+  const m=$("#main");if(!m)return;const g=m.querySelector(".scr");
+  if(role!=="screen"||!g){m.style.transform="";m.style.width="";m.style.maxWidth="";if(g)g.style.height="";return;}
+  const head=document.querySelector("header.top");const W=document.documentElement.clientWidth;
+  const pad=parseFloat(getComputedStyle(m).paddingTop)+parseFloat(getComputedStyle(m).paddingBottom);
+  const avail=window.innerHeight-(head?head.offsetHeight:0)-pad-4;
+  const wide=W>=900;
   let z=1;m.style.transformOrigin="top left";m.style.maxWidth="none";m.style.transform="";m.style.width=W+"px";
-  // lay out at a wider size, then scale down to the display: a few passes because width changes height
-  for(let i=0;i<5;i++){const h=m.scrollHeight*z;if(h<=avail+1)break;z=Math.max(.3,z*avail/h);m.style.width=(W/z)+"px";m.style.transform=`scale(${z})`;}
+  g.style.height=wide?avail+"px":"";
+  if(!wide)return;
+  // the grid fills the display exactly; if the left column still overflows, lay out taller and scale down
+  for(let i=0;i<5;i++){const need=Math.max(g.scrollHeight,...[...g.children].map(ch=>ch.offsetTop+ch.scrollHeight));const h=need*z;
+    if(h<=avail+1)break;z=Math.max(.3,z*avail/h);m.style.width=(W/z)+"px";g.style.height=(avail/z)+"px";m.style.transform=`scale(${z})`;}
 }
 window.addEventListener("resize",()=>{if(role==="screen")fitScreen();});
 
