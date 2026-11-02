@@ -186,7 +186,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.6.3</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.7.0</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -235,9 +235,10 @@ const EDGES = [["Townshend","I Boschi",1],["I Boschi","Arkham",1],["I Boschi","D
 const SEA = ["New York","Boston","Kingsport","Innsmouth"];
 const AIR = ["Boston","New York","Chicago","San Francisco","Los Angeles"];
 const LOCS = Object.keys(POS);
-const CHECKLOCS = LOCS.filter(l=>l!=="Dunwich");
+const SUBINV = {"New Orleans":"Paludi di New Orleans"};
+const CHECKLOCS = LOCS.filter(l=>l!=="Dunwich").flatMap(l=>SUBINV[l]?[l,SUBINV[l]]:[l]);
 const STARTS = ["New York","Providence","Boston","Salem","Arkham","Chicago"];
-const ACTS = [["Indagare",1],["Riposare",1],["Equipaggiarsi",1],["Reclutare aiutanti",1],["Reclutare investigatore",2]];
+const ACTS = [["Investigare",1],["Riposare",1],["Equipaggiarsi",1],["Reclutare aiutanti",1],["Reclutare investigatore",2]];
 
 
 /* ---------- helpers ---------- */
@@ -715,7 +716,7 @@ function invSlotsAlive(){return SLOTS.filter(k=>alive(invOf(k)));}
 /* ---------- location library editor ---------- */
 function blankLoc(){return {min:1,max:6,enc:{1:0,2:0,3:0,4:0,5:0,6:0},note:"",rest:"",rec:[],arms:[]};}
 const S1={
-  editLoc(){const d=locData(S.loc);locEdit=JSON.parse(JSON.stringify(d||blankLoc()));render();},
+  editLoc(){const d=locData(S.loc);locEdit=JSON.parse(JSON.stringify(d||blankLoc()));const sk=SUBINV[S.loc];if(sk){const sd=locData(sk);locEdit.sub=sd?{min:sd.min,max:sd.max,enc:{...sd.enc},note:sd.note||""}:{min:1,max:6,enc:{1:0,2:0,3:0,4:0,5:0,6:0},note:""};}render();},
   cancelLoc(){locEdit=null;render();},
   saveLoc(){const e=locEdit;e.min=Math.max(1,+e.min||1);e.max=Math.max(e.min,+e.max||6);
     const enc={};for(let n=e.min;n<=e.max;n++)enc[n]=Math.max(0,Math.min(3,+e.enc[n]||0));e.enc=enc;
@@ -723,7 +724,12 @@ const S1={
     e.arms=e.arms.filter(a=>a.name);
     if(e.boss){const b=e.boss;["L","life","atk","dmg","days"].forEach(f=>b[f]=Math.max(f==="days"?0:1,+b[f]||0));b.inc=!!b.inc&&b.inc!=="false";b.hel=!!b.hel&&b.hel!=="false";
       b.conds=b.conds.filter(c=>c.label||c.cls).map(c=>({...c,mod:+c.mod||0}));}
-    LIB=merge(LIB,{locs:{[S.loc]:null}});LIB.locs[S.loc]=e;locEdit=null;render();
+    const sk=SUBINV[S.loc];let se=null;
+    if(sk&&e.sub){const x=e.sub;x.min=Math.max(1,+x.min||1);x.max=Math.max(x.min,+x.max||6);const en={};for(let n=x.min;n<=x.max;n++)en[n]=Math.max(0,Math.min(3,+x.enc[n]||0));
+      se={min:x.min,max:x.max,enc:en,note:x.note||"",rest:"",rec:[],arms:[]};}
+    delete e.sub;
+    LIB=merge(LIB,{locs:{[S.loc]:null}});LIB.locs[S.loc]=e;if(se){LIB.locs[sk]=se;}locEdit=null;render();
+    if(se){q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[sk]:null}}}));q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[sk]:se}}}));}
     q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[S.loc]:null}}}));
     q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[S.loc]:e}}}));},
   addRec(kind){locEdit.rec.push(kind==="inv"?{kind:"inv",cls:"",days:2,boxes:1,note:""}:{kind:"hel",name:"",min:1,max:1,life:1,san:1,atk:0,days:1,boxes:1,note:""});render();},
@@ -742,20 +748,21 @@ const S1={
   delArm(i){locEdit.arms.splice(+i,1);render();},
 
   /* ---------- investigate ---------- */
-  async investigate(){
-    const L=locData(S.loc);if(!L||S.final)return;
+  async investigate(which){
+    const key=which==='sub'&&SUBINV[S.loc]?SUBINV[S.loc]:S.loc;const where=key===S.loc?S.loc:`${S.loc}, nelle paludi`;
+    const L=locData(key);if(!L||S.final)return;
     const newDay=S.day+1;const tm=S.tomorrow&&S.tomorrow.day===newDay&&S.tomorrow.loc===S.loc?(+S.tomorrow.mod||0):0;
     const mod=(+invMod||0)+tm;
-    const valid=[];for(let n=L.min;n<=L.max;n++){const b=+L.enc[n]||0;if(b===0||usedOf(S.loc,n)<b)valid.push(n);}
+    const valid=[];for(let n=L.min;n<=L.max;n++){const b=+L.enc[n]||0;if(b===0||usedOf(key,n)<b)valid.push(n);}
     const sel=helperSel||Object.fromEntries(helpers().map(([k])=>[k,true]));
     const rolls=[];let res=null;
-    if(valid.length){for(let i=0;i<60;i++){let r;try{r=await getD6(i===0?`Indagine a ${S.loc}${mod?` (modificatore ${mod>0?"+":""}${mod})`:""}`:`Incontro già usato: ritira`);}catch(e){return;}const v=Math.max(L.min,Math.min(L.max,r+mod));rolls.push(r);if(valid.includes(v)){res=v;break;}}}
-    const patch={day:newDay,tomorrow:null,combat:{helpers:sel},enc:{loc:S.loc,n:res,rolls,mod,ts:Date.now()},
-      last:{who:"",text:`Indagine a ${S.loc}`,total:res==null?"—":res,res:res==null?"Nessun evento":`Incontro ${res}`,dice:rolls,ts:Date.now()}};
-    if(res!=null&&(+L.enc[res]||0)>0)patch.checks={[S.loc]:{[res]:usedOf(S.loc,res)+1}};
+    if(valid.length){for(let i=0;i<60;i++){let r;try{r=await getD6(i===0?`Investigazione a ${where}${mod?` (modificatore ${mod>0?"+":""}${mod})`:""}`:`Incontro già usato: ritira`);}catch(e){return;}const v=Math.max(L.min,Math.min(L.max,r+mod));rolls.push(r);if(valid.includes(v)){res=v;break;}}}
+    const patch={day:newDay,tomorrow:null,combat:{helpers:sel},enc:{loc:S.loc,tab:key,n:res,rolls,mod,ts:Date.now()},
+      last:{who:"",text:`Investigazione a ${where}`,total:res==null?"—":res,res:res==null?"Nessun evento":`Incontro ${res}`,dice:rolls,ts:Date.now()}};
+    if(res!=null&&(+L.enc[res]||0)>0)patch.checks={[key]:{[res]:usedOf(key,res)+1}};
     upd(patch);
     const rs=rolls.map(r=>r+(mod?(mod>0?"+":"")+mod:"")).join(", poi ");
-    addLog(res==null?`Indagine a ${S.loc}: nessun evento possibile. Giorno ${newDay}.`:`Indagine a ${S.loc} (giorno ${newDay}): ${rs} → incontro ${res}${rolls.length>1?" (ritirato perché già usato)":""}.`);
+    addLog(res==null?`Investigazione a ${where}: nessun evento possibile. Giorno ${newDay}.`:`Investigazione a ${where} (giorno ${newDay}): ${rs} → incontro ${res}${rolls.length>1?" (ritirato perché già usato)":""}.`);
     invMod=0;
   },
   tomorrow(d){upd({tomorrow:{day:S.day+1,loc:S.loc,mod:(S.tomorrow&&S.tomorrow.day===S.day+1?(+S.tomorrow.mod||0):0)+(+d)}});},
@@ -903,11 +910,20 @@ function bossCard(L){const B=L.boss;if(!B)return "";const r=bossCalc(B);
     <div class="row"><button class="pri" data-a="s1" data-f="bossFight" ${S.combat&&S.combat.on?"disabled":""}>Affronta ${esc(B.name||"il boss")}</button></div></div>`;}
 
 /* ================= views ================= */
+function subInvCard(){
+  const sk=SUBINV[S.loc];if(!sk)return "";const L=locData(sk);
+  if(!L)return `<div class="card"><h3>Investigare nelle paludi <span class="muted">(1 giorno)</span></h3><p class="muted">Tabella non ancora configurata: usa «Modifica dati del luogo».</p></div>`;
+  const boxes=[];for(let n=L.min;n<=L.max;n++){const b=+L.enc[n]||0;const u=usedOf(sk,n);boxes.push(`<span class="stat ${b&&u>=b?"warn":""}"><b>${n}</b>${b?` ${"■".repeat(Math.min(u,b))}${"□".repeat(Math.max(0,b-u))}`:" ∞"}</span>`);}
+  return `<div class="card"><h3>Investigare nelle paludi <span class="muted">(1 giorno)</span></h3>
+    ${L.note?`<p class="muted">Bonus: ${esc(L.note)}</p>`:""}
+    <div class="row">${boxes.join("")}</div>
+    <p class="muted">Usa gli aiutanti e il modificatore indicati sopra.</p>
+    <div class="row"><button class="pri" data-a="s1" data-f="investigate" data-p="sub" ${S.final?"disabled":""}>Investiga nelle paludi</button></div></div>`;}
 function viewLocation(){
   if(locEdit)return viewLocEdit();
   const L=locData(S.loc);
   if(!S.loc)return `<div class="card"><p>Il gruppo non ha ancora un luogo.</p></div>`;
-  if(!L)return `<div class="card"><h2>${esc(S.loc)}</h2><p>Questo luogo non è ancora configurato. Inserisci dal libro la struttura della tabella Indagare, le reclute e le armi: lo fai una volta sola e resta salvato per le prossime partite.</p><div class="row"><button class="pri" data-a="s1" data-f="editLoc">Configura ${esc(S.loc)}</button></div></div>${encCard()}`;
+  if(!L)return `<div class="card"><h2>${esc(S.loc)}</h2><p>Questo luogo non è ancora configurato. Inserisci dal libro la struttura della tabella Investigare, le reclute e le armi: lo fai una volta sola e resta salvato per le prossime partite.</p><div class="row"><button class="pri" data-a="s1" data-f="editLoc">Configura ${esc(S.loc)}</button></div></div>${encCard()}`;
   const newDay=S.day+1;const tm=S.tomorrow&&S.tomorrow.day===newDay&&S.tomorrow.loc===S.loc?+S.tomorrow.mod:0;
   const hel=helpers();const sel=helperSel||Object.fromEntries(hel.map(([k])=>[k,true]));
   const boxes=[];for(let n=L.min;n<=L.max;n++){const b=+L.enc[n]||0;const u=usedOf(S.loc,n);boxes.push(`<span class="stat ${b&&u>=b?"warn":""}"><b>${n}</b>${b?` ${"■".repeat(Math.min(u,b))}${"□".repeat(Math.max(0,b-u))}`:" ∞"}</span>`);}
@@ -915,13 +931,14 @@ function viewLocation(){
   const spy=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="spia"&&alive(s)&&(s.used.zio||0)<s.lvl;});
   return `<div class="card"><div class="row sb"><h2>${esc(S.loc)}</h2><button class="sm" data-a="s1" data-f="editLoc">Modifica dati del luogo</button></div>
     ${L.note?`<p class="muted">Bonus del luogo: ${esc(L.note)}</p>`:""}</div>
-  <div class="card"><h3>Indagare <span class="muted">(1 giorno)</span></h3>
+  <div class="card"><h3>Investigare <span class="muted">(1 giorno)</span></h3>
     <div class="row">${boxes.join("")}</div>
     ${hel.length?`<div class="row"><span class="muted">Aiutanti che partecipano:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]?"pri":""}" data-a="s1" data-f="helperToggle" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
     <div class="row"><label for="invmod" style="flex-direction:row;align-items:center;gap:6px">Modificatore <input id="invmod" type="number" value="${invMod}" data-s1v="invMod" style="width:80px"></label>
       ${tm?`<span class="chip me">domani ${tm>0?"+":""}${tm}</span>`:""}</div>
-    <div class="row"><button class="pri" data-a="s1" data-f="investigate" ${S.final?"disabled":""}>Indaga</button></div>
+    <div class="row"><button class="pri" data-a="s1" data-f="investigate" ${S.final?"disabled":""}>Investiga</button></div>
   </div>
+  ${subInvCard()}
   ${bossCard(L)}
   ${encCard()}
   <div class="card"><h3>Reclutare</h3>
@@ -944,7 +961,7 @@ function encCard(){
   const e=S.enc&&S.enc.loc===S.loc&&S.day>=0?S.enc:null;
   const nurse=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="infermiera"&&alive(s)&&(s.used.conforto||0)<s.lvl;});
   return `<div class="card"><h3>Incontro ${e&&e.n!=null?`<b class="ok">${e.n}</b>`:""}</h3>
-    ${e?(e.n!=null?`<p>Leggi l'incontro <b>${e.n}</b> di ${esc(e.loc)} dal libro.</p>`:`<p>Nessun evento.</p>`):`<p class="muted">Gli strumenti qui sotto servono durante qualunque incontro.</p>`}
+    ${e?(e.n!=null?`<p>Leggi l'incontro <b>${e.n}</b> di ${esc(e.tab||e.loc)} dal libro.</p>`:`<p>Nessun evento.</p>`):`<p class="muted">Gli strumenti qui sotto servono durante qualunque incontro.</p>`}
     <div class="row"><label for="sandiff" style="flex-direction:row;align-items:center;gap:6px">Test di Sanità <input id="sandiff" type="number" min="1" value="${sanDiff}" data-s1v="sanDiff" style="width:70px"></label><button data-a="s1" data-f="sanityAll">Tira per tutti</button></div>
     ${lastSan&&Date.now()-lastSan.ts<600000?`<div class="result">${lastSan.out.map((o,i)=>`${esc(o.name)}: ${o.t} ${o.ok?`<span class="ok">ok</span>`:o.comf?`<span class="ok">confortato</span>`:`<span class="ko">−1</span>${nurse?` <button class="sm" data-a="s1" data-f="comfort" data-p="${i}">Conforto</button>`:""}`}`).join("<br>")}</div>`:""}
     <div class="row"><span class="muted">Per domani:</span><button class="sm" data-a="s1" data-f="tomorrow" data-p="1">+1</button><button class="sm" data-a="s1" data-f="tomorrow" data-p="2">+2</button><button class="sm" data-a="s1" data-f="tomorrow" data-p="-1">−1</button>
@@ -963,11 +980,15 @@ function viewLocEdit(){
   const e=locEdit;const rng=[];for(let n=+e.min||1;n<=(+e.max||6);n++)rng.push(n);
   const opt=(v,list)=>list.map(([k,n])=>`<option value="${k}" ${String(v)===String(k)?"selected":""}>${n}</option>`).join("");
   return `<div class="card"><h2>Dati di ${esc(S.loc)}</h2><p class="muted">Copia dal libro solo i numeri e i nomi che ti servono. Restano nel tuo database, non nella pagina.</p>
-    <h3>Tabella Indagare</h3>
+    <h3>Tabella Investigare</h3>
     <div class="f"><label for="le-min">Risultato minimo<input id="le-min" type="number" data-le="min" value="${e.min}"></label><label for="le-max">Risultato massimo<input id="le-max" type="number" data-le="max" value="${e.max}"></label></div>
     <div class="f">${rng.map(n=>`<label for="le-e${n}">Risultato ${n}<select id="le-e${n}" data-le="enc.${n}">${opt(e.enc[n]||0,[[0,"ripetibile"],[1,"1 casella"],[2,"2 caselle"],[3,"3 caselle"]])}</select></label>`).join("")}</div>
     <label for="le-note">Bonus del luogo sul tiro (nota)<input id="le-note" data-le="note" value="${esc(e.note)}"></label>
     <label for="le-rest">Riposo (nota)<input id="le-rest" data-le="rest" value="${esc(e.rest)}"></label>
+    ${e.sub?(()=>{const x=e.sub;const r2=[];for(let n=+x.min||1;n<=(+x.max||6);n++)r2.push(n);return `<h3>Tabella Investigare nelle paludi</h3>
+    <div class="f"><label for="le-smin">Risultato minimo<input id="le-smin" type="number" data-le="sub.min" value="${x.min}"></label><label for="le-smax">Risultato massimo<input id="le-smax" type="number" data-le="sub.max" value="${x.max}"></label></div>
+    <div class="f">${r2.map(n=>`<label for="le-s${n}">Risultato ${n}<select id="le-s${n}" data-le="sub.enc.${n}">${opt(x.enc[n]||0,[[0,"ripetibile"],[1,"1 casella"],[2,"2 caselle"],[3,"3 caselle"]])}</select></label>`).join("")}</div>
+    <label for="le-snote">Bonus sul tiro nelle paludi (nota)<input id="le-snote" data-le="sub.note" value="${esc(x.note)}"></label>`;})():""}
     <h3>Reclute</h3>
     ${e.rec.map((r,i)=>r.kind==="inv"?`<div class="card" style="background:#1a1624"><div class="f">
         <label for="le-r${i}c">Investigatore<select id="le-r${i}c" data-le="rec.${i}.cls">${opt(r.cls,[["","—"],...Object.entries(CL).map(([k,c])=>[k,c.n])])}</select></label>
@@ -1351,7 +1372,7 @@ document.addEventListener("click",e=>{
 });
 document.addEventListener("change",e=>{
   const t=e.target,p=t.dataset.p;if(!role)return;
-  if(t.dataset.le&&locEdit){if(t.dataset.le==="min"||t.dataset.le==="max")render();return;}
+  if(t.dataset.le&&locEdit){if(/^(sub\.)?(min|max)$/.test(t.dataset.le))render();return;}
   if(t.dataset.tx){if(!isNarr&&!MY[p])return;invUpd(p,{[t.dataset.tx]:t.value});return;}
   if(!isNarr)return;
   if(t.dataset.ch==="roster"){A.pickRoster(p,t.value);return;}
