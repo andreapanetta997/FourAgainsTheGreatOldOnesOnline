@@ -119,7 +119,7 @@ nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 .landing-logo{display:flex;justify-content:center;padding:8px 0}
 .scr{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));grid-auto-flow:dense}
 .scr .card{gap:6px}
-.scr-map,.scr-foes{grid-row:span 2}
+.scr-map{grid-row:span 2}
 @media (min-width:1100px){.scr-map{grid-column:span 2}}
 .scr-days{display:flex;align-items:baseline;gap:8px}.scr-days b{font-size:64px;line-height:1;color:var(--paper)}
 .scr-bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}.scr-bar span{display:block;height:100%;background:var(--blood)}
@@ -129,6 +129,21 @@ nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 .scr-inv{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:88px}.scr-inv.out{opacity:.45}
 .scr-num{display:inline-flex;min-width:30px;height:30px;padding:0 6px;border-radius:6px;background:#3a1a1e;color:#f09595;align-items:center;justify-content:center;font-family:var(--mono)}
 body.screen-mode main{max-width:none}
+.scr-stage{grid-column:1/-1;border-color:#5a2a33}
+.scr-stage h2{font-size:26px}
+.scr-foes-row{display:flex;flex-wrap:wrap;gap:14px}
+.scr-foe{flex:1 1 200px;max-width:280px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:12px;border-radius:10px;border:1px solid var(--line);background:rgba(10,8,16,.35)}
+.scr-foe.fk-boss{border-color:#f09595}.scr-foe.fk-inc{border-color:#8fc4e8}.scr-foe.fk-minion{border-color:#e8b26a}.scr-foe.fk-vermin{border-color:#e3d48a}
+.scr-foe-name{font-family:var(--display);font-size:24px}
+.scr-foe-n{font-size:40px;line-height:1}
+.scr-foe-n .muted{font-size:14px}
+.scr-foe-pips{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}.scr-foe-pips span{width:12px;height:12px;border-radius:50%;border:1px solid var(--muted)}.scr-foe-pips span.on{background:var(--blood);border-color:var(--blood)}
+.scr-foe .scr-bar{width:100%}
+.scr-atk{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.scr-atk-col{border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.scr-doneline{display:flex;align-items:center;gap:10px;white-space:nowrap;overflow-x:auto;padding:2px 0}.scr-doneline b{min-width:130px}
+.scr-nums{display:flex;gap:6px}
+@media (prefers-reduced-motion:no-preference){.scr-foe svg{animation:loom 4s ease-in-out infinite}@keyframes loom{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -137,7 +152,7 @@ body.screen-mode main{max-width:none}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.1</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.2</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -915,6 +930,34 @@ function myDefenses(){
   return `<div class="card" style="border-color:var(--blood)"><h3>Ti stanno attaccando</h3>${mine.map(([k,a])=>{const r=cr[k];const fx=S.foes[a.fid]||{kind:a.boss?"Boss":"Minion"};return `<div class="row sb"><span class="hcard">${many?`${ico(MY[a.tgt].cls,18)}<b>${esc(a.tname)}</b> ← `:""}${foeBadge(fx)} ${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="pri sm" data-a="s1" data-f="defend" data-p="${k}">Difenditi</button>`}</div>`;}).join("")}</div>`;
 }
 
+/* ================= original enemy illustrations for the table screen ================= */
+const FOE_ART={
+  cultist:`<path d="M60 8c-20 0-30 22-30 44v8c0 6-6 14-12 52h84c-6-38-12-46-12-52v-8C90 30 80 8 60 8z" fill="var(--a-fill)"/><path d="M60 8c-20 0-30 22-30 44v8c0 6-6 14-12 52h84c-6-38-12-46-12-52v-8C90 30 80 8 60 8z"/><path d="M42 50c6-14 30-14 36 0v18c-6 6-30 6-36 0z" fill="#0c0912"/><circle cx="52" cy="58" r="2.6" fill="var(--a-eye)" stroke="none"/><circle cx="68" cy="58" r="2.6" fill="var(--a-eye)" stroke="none"/><path d="M48 84l-10 30M72 84l10 30M60 74v40"/><path d="M84 70l16-14M98 54l6 4-4 6"/><path d="M28 76c-6 2-8 8-6 14"/><path d="M24 92v-14"/><path d="M24 74c-2-4 0-8 2-10 0 4 3 6 0 10z" fill="var(--a-eye)"/>`,
+  thug:`<path d="M30 40c4-16 56-16 60 0" /><path d="M22 42c10 6 66 6 76 0" /><path d="M36 40l2-14c4-10 40-10 44 0l2 14" fill="var(--a-fill)"/><path d="M40 44c0 22 8 30 20 30s20-8 20-30" fill="var(--a-fill)"/><path d="M48 56h8M64 56h8"/><path d="M52 66c5 3 11 3 16 0"/><path d="M30 116c0-26 12-38 30-38s30 12 30 38" fill="var(--a-fill)"/><path d="M60 78v38M52 82l8 10 8-10"/><path d="M88 96l20-6v6l-18 8"/>`,
+  undead:`<path d="M60 10c-18 0-26 14-26 30 0 12 6 20 10 24v12h32V64c4-4 10-12 10-24 0-16-8-30-26-30z" fill="var(--a-fill)"/><circle cx="50" cy="40" r="7" fill="#0c0912"/><circle cx="70" cy="40" r="7" fill="#0c0912"/><circle cx="50" cy="40" r="2" fill="var(--a-eye)" stroke="none"/><circle cx="70" cy="40" r="2" fill="var(--a-eye)" stroke="none"/><path d="M60 46l-3 8h6z"/><path d="M48 64v8M54 64v10M60 64v10M66 64v10M72 64v8"/><path d="M40 80c-10 6-16 20-14 36M80 80c10 6 16 20 14 36"/><path d="M40 84h40M44 94h32M48 104h24"/><path d="M26 116l-6-10M94 116l6-10"/>`,
+  ghost:`<path d="M60 8c-24 0-34 22-34 44v60l10-8 10 10 10-10 8 10 8-10 10 10 10-10 10 8V52C94 30 84 8 60 8z" fill="var(--a-fill)" opacity=".85"/><path d="M60 8c-24 0-34 22-34 44v60l10-8 10 10 10-10 8 10 8-10 10 10 10-10 10 8V52C94 30 84 8 60 8z" stroke-dasharray="6 4"/><ellipse cx="48" cy="46" rx="6" ry="9" fill="#0c0912"/><ellipse cx="72" cy="46" rx="6" ry="9" fill="#0c0912"/><path d="M50 72c4 6 16 6 20 0" /><ellipse cx="60" cy="74" rx="6" ry="8" fill="#0c0912"/><path d="M14 40c6-4 8-12 6-20M106 40c-6-4-8-12-6-20M18 70c-6 0-10-4-12-10M102 70c6 0 10-4 12-10"/>`,
+  winged:`<path d="M60 30c-8 0-12 10-12 22 0 16 4 34 12 54 8-20 12-38 12-54 0-12-4-22-12-22z" fill="var(--a-fill)"/><path d="M52 30c-2-10 0-18 4-22M68 30c2-10 0-18-4-22"/><path d="M48 52C34 30 14 28 4 36c10 2 14 10 12 18 6-6 14-2 16 6 4-6 12-6 16 0z" fill="var(--a-fill)"/><path d="M72 52c14-22 34-24 44-16-10 2-14 10-12 18-6-6-14-2-16 6-4-6-12-6-16 0z" fill="var(--a-fill)"/><path d="M54 106l-6 10M66 106l6 10M60 106v12"/><path d="M52 60c4 4 12 4 16 0"/>`,
+  fishman:`<path d="M60 12c-20 0-30 14-30 30 0 10 4 18 8 22l-8 52h60l-8-52c4-4 8-12 8-22 0-16-10-30-30-30z" fill="var(--a-fill)"/><circle cx="44" cy="36" r="8" fill="#0c0912"/><circle cx="76" cy="36" r="8" fill="#0c0912"/><circle cx="44" cy="36" r="3" fill="var(--a-eye)" stroke="none"/><circle cx="76" cy="36" r="3" fill="var(--a-eye)" stroke="none"/><path d="M44 54c10 6 22 6 32 0"/><path d="M50 50l-4-6M70 50l4-6"/><path d="M34 60l-6 4M34 66l-8 6M86 60l6 4M86 66l8 6"/><path d="M60 10v-4M54 14l-6-8M66 14l6-8"/><path d="M30 116l-12 4M90 116l12 4M30 116l-6 2"/><path d="M48 76c4 4 20 4 24 0M46 88c6 4 22 4 28 0"/>`,
+  vermin:`<ellipse cx="52" cy="72" rx="30" ry="18" fill="var(--a-fill)"/><circle cx="86" cy="62" r="12" fill="var(--a-fill)"/><path d="M96 62l14 4-14 4"/><circle cx="90" cy="58" r="2.4" fill="var(--a-eye)" stroke="none"/><path d="M82 50l-2-8 6 4M92 50l2-8-6 4"/><path d="M22 72c-12 0-16 10-12 20 4 8 14 8 18 2"/><path d="M38 88l-4 12M52 90v12M66 88l4 12"/><ellipse cx="34" cy="30" rx="12" ry="7" fill="var(--a-fill)"/><circle cx="48" cy="27" r="5" fill="var(--a-fill)"/><path d="M22 30c-6 0-8 4-6 8M30 36l-2 6M38 37l2 6"/><circle cx="50" cy="26" r="1.2" fill="var(--a-eye)" stroke="none"/>`,
+  boss:`<path d="M14 46C32 18 88 18 106 46 88 74 32 74 14 46z" fill="var(--a-fill)"/><circle cx="60" cy="46" r="16" fill="#0c0912"/><circle cx="60" cy="46" r="9" fill="var(--a-eye)" stroke="none"/><path d="M60 38v16" stroke="#0c0912" stroke-width="4"/><path d="M30 64c-10 14 4 22-6 40-4 6-10 6-12 2"/><path d="M46 70c-4 16 10 22 2 40"/><path d="M60 72c0 16 8 22 4 42"/><path d="M74 70c4 16-10 22-2 40"/><path d="M90 64c10 14-4 22 6 40 4 6 10 6 12 2"/><path d="M20 30c-4-8-2-16 4-20M100 30c4-8 2-16-4-20"/><circle cx="36" cy="88" r="2" fill="var(--a-eye)" stroke="none"/><circle cx="84" cy="92" r="2" fill="var(--a-eye)" stroke="none"/>`
+};
+const FOE_THEME={vermin:["#2c2a1a","#e3d48a"],minion:["#2e2418","#e8b26a"],inc:["#1a2532","#8fc4e8"],boss:["#3a1a1e","#f09595"]};
+function foeArtKey(x){
+  const n=(x.name||"").toLowerCase();
+  if(x.kind==="Boss"&&!/cultist|sacerdot|criminal|gangster/.test(n))return "boss";
+  if(/spettr|fantasm|spirit|ghost|ombr|anim[ae] |presenz/.test(n)||x.inc)return "ghost";
+  if(/cadaver|zomb|rianim|corpse|mort|schelet|undead|mummi/.test(n))return "undead";
+  if(/gaunt|alat|notturn|night|pipistrell|bat|volant|uccell/.test(n))return "winged";
+  if(/profond|deep|pesce|fish|ibrid|anfib|marin/.test(n))return "fishman";
+  if(/ratt|rat|topi|insett|verm|parassit|bug|ragn|serp|cani|segug|lup/.test(n)||x.kind==="Vermin")return "vermin";
+  if(/criminal|gangster|teppist|delinquent|bandit|uomin|guard|poliziott|scagnozz|sicari|contrabband/.test(n))return "thug";
+  return x.kind==="Boss"?"boss":"cultist";
+}
+function foeArt(x,size){
+  const k=foeKind(x);const [bg,fg]=FOE_THEME[k];
+  return `<svg viewBox="0 0 120 120" width="${size}" height="${size}" style="--a-fill:${bg};--a-eye:${fg}" fill="none" stroke="${fg}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${FOE_ART[foeArtKey(x)]}</svg>`;
+}
+
 /* ================= "Schermo giocatori": shared read-only table screen ================= */
 let VIEW=null,PARTY={},VIEWCODE=null,wakeLock=null;
 async function keepAwake(){try{if(navigator.wakeLock&&!wakeLock){wakeLock=await navigator.wakeLock.request("screen");wakeLock.addEventListener("release",()=>{wakeLock=null;});}}catch(e){}}
@@ -943,7 +986,16 @@ function viewScreen(){
   const as=Object.entries(c.assign||{}).filter(([,a])=>a);const cr=c.cres||{};
   const visited=Object.entries(S.checks||{}).map(([l,m])=>[l,Object.entries(m||{}).filter(([,v])=>v===true||+v>0).map(([n,v])=>v===true||+v===1?n:`${n}×${v}`)]).filter(([,a])=>a.length);
   const l=S.last;
-  return `<div class="scr">
+  const stage=foes.length?`<section class="scr-stage card"><div class="row sb"><h2>Combattimento${c.on?` · round ${c.round||1}`:""}</h2>${c.on&&c.init?`<span class="chip dead">iniziativa ai nemici</span>`:""}</div>
+    <div class="scr-foes-row">${foes.map(([,x])=>{const k=foeKind(x);return `<div class="scr-foe fk-${k}">${foeArt(x,150)}
+      <div class="scr-foe-name">${esc(x.name)}</div><div class="muted">L${x.L}${x.inc?" · incorporeo":""}${x.kind==="Boss"?" · boss":""}${x.dmg>1?` · ${x.dmg} ferite per colpo`:""}</div>
+      <div class="scr-foe-n num">${x.n}<span class="muted"> ${x.kind==="Boss"?"Vita":x.n===1?"rimasto":"rimasti"}</span></div>
+      ${x.kind!=="Boss"?`<div class="scr-foe-pips">${Array.from({length:Math.min(x.n0||x.n,20)},(_,i)=>`<span class="${i<x.n?"on":""}"></span>`).join("")}</div>`:`<div class="scr-bar"><span style="width:${Math.round(x.n/(x.n0||x.n)*100)}%"></span></div>`}</div>`;}).join("")}</div>
+    ${as.length?`<h3>${c.flee?"Fuga: ultimo attacco":"Attacchi dei nemici"}</h3><div class="scr-atk">${(()=>{const g={};as.forEach(([k,a])=>{(g[a.tgt]=g[a.tgt]||{name:a.tname,list:[]}).list.push([k,a]);});
+      return Object.entries(g).map(([t,o])=>{const ic=PARTY[t]&&PARTY[t].cls?ico(PARTY[t].cls,18):ico("helper",18);
+        return `<div class="scr-atk-col"><div class="hcard"><b>${ic} ${esc(o.name)}</b></div>${o.list.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${esc(a.fname)}</span><span class="${r&&r.done?(/Schivato/.test(r.res)?"ok":"ko"):"muted"}">${r&&r.done?(/Schivato/.test(r.res)?"schivato":"colpito"):"…"}</span></div>`;}).join("")}</div>`;}).join("");})()}</div>`:""}
+  </section>`:"";
+  return `<div class="scr">${stage}
   <section class="scr-top card">
     <div class="scr-days"><span class="muted">Giorno</span><b class="num">${S.day}</b><span class="muted">/ 40</span></div>
     <div class="scr-bar"><span style="width:${pct}%"></span></div>
@@ -955,11 +1007,8 @@ function viewScreen(){
   <section class="scr-roll card"><span class="muted">Ultimo tiro</span>${l?`<div><span class="scr-big num ok">${esc(l.total)}</span> <b>${esc(l.who||"Narratore")}</b></div><div class="muted">${esc(l.text)}</div>${l.res?`<div class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</div>`:""}`:`<div class="muted">nessuno</div>`}</section>
   <section class="scr-party card"><h3>Il gruppo</h3><div class="row">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,52)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}</div>
     ${hel.length?`<div class="row">${hel.map(([,h])=>`<span class="stat">${ico("helper",16)} ${esc(h.name)}${h.life<=0||(h.smax>0&&h.san<=0)?" ✕":""}</span>`).join("")}</div>`:""}</section>
-  <section class="scr-foes card"><h3>Nemici${c.on?` · round ${c.round||1}${c.init?" · iniziativa ai nemici":""}`:""}</h3>
-    ${foes.length?foes.map(([,x])=>`<div class="enemy"><div class="hcard">${foeBadge(x)}<div><b>${esc(x.name)}</b> <span class="muted">L${x.L}${x.inc?" · incorporeo":""}${x.kind==="Boss"?" · boss":""}</span></div></div><div class="scr-big num">${x.n}<span class="muted" style="font-size:14px"> ${x.kind==="Boss"?"Vita":"rimasti"}</span></div></div>`).join(""):`<p class="muted">Nessun nemico in vista.</p>`}
-    ${as.length?`<h3>${c.flee?"Fuga":"Attacchi dei nemici"}</h3>${as.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${esc(a.fname)} → <b>${esc(a.tname)}</b></span><span class="${r&&r.done?(/Schivato/.test(r.res)?"ok":"ko"):"muted"}">${r&&r.done?esc(r.res):"in attesa"}</span></div>`;}).join("")}`:""}</section>
   <section class="scr-map card"><h3>Mappa</h3>${mapSvg(null)}</section>
-  <section class="scr-done card"><h3>Incontri già usciti</h3>${visited.length?visited.map(([l2,a])=>`<div class="row"><b style="min-width:150px">${esc(l2)}</b>${a.map(n=>`<span class="scr-num">${esc(n)}</span>`).join("")}</div>`).join(""):`<p class="muted">Ancora nessuno.</p>`}</section>
+  <section class="scr-done card"><h3>Incontri già usciti</h3>${visited.length?visited.map(([l2,a])=>`<div class="scr-doneline"><b>${esc(l2)}</b><span class="scr-nums">${a.map(n=>`<span class="scr-num">${esc(n)}</span>`).join("")}</span></div>`).join(""):`<p class="muted">Ancora nessuno.</p>`}</section>
   </div>`;
 }
 
