@@ -185,7 +185,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.5.8</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.5.9</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -231,6 +231,7 @@ const EDGES = [["Townshend","I Boschi",1],["I Boschi","Arkham",1],["I Boschi","D
  ["Chicago","New Orleans",3],["St. Louis","San Francisco",3],["St. Louis","New Orleans",3],["San Francisco","New York",5],
  ["San Francisco","Los Angeles",1],["Los Angeles","New Orleans",3],["New York","New Orleans",3],["New York","Palude di Big Cypress",2],
  ["New Orleans","Palude di Big Cypress",2]];
+const SEA = ["New York","Boston","Kingsport","Innsmouth"];
 const AIR = ["Boston","New York","Chicago","San Francisco","Los Angeles"];
 const LOCS = Object.keys(POS);
 const CHECKLOCS = LOCS.filter(l=>l!=="Dunwich");
@@ -251,10 +252,12 @@ const ctrMax = (c,s)=>c.max==="L"?s.lvl:c.max;
 function classBonus(s){const a=CL[s.cls].att;return a==="L"?s.lvl:a==="L/2"?Math.floor(s.lvl/2):0;}
 function hhmm(ts){const d=new Date(ts);return d.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});}
 
-function shortest(from,to,pilot){
+function shortest(from,to,pilot,captain){
   const adj={};LOCS.forEach(l=>adj[l]=[]);
   EDGES.forEach(([a,b,d])=>{adj[a].push([b,d]);adj[b].push([a,d]);});
   if(pilot)AIR.forEach(a=>AIR.forEach(b=>{if(a!==b)adj[a].push([b,1]);}));
+  // sea captain: 1 day between these ports, 2 days New York <-> New Orleans
+  if(captain){SEA.forEach(a=>SEA.forEach(b=>{if(a!==b)adj[a].push([b,1]);}));adj["New York"].push(["New Orleans",2]);adj["New Orleans"].push(["New York",2]);}
   const dist={},prev={},q=new Set(LOCS);LOCS.forEach(l=>dist[l]=Infinity);dist[from]=0;
   while(q.size){let u=null;q.forEach(x=>{if(u===null||dist[x]<dist[u])u=x;});q.delete(u);if(u===to)break;
     adj[u].forEach(([v,d])=>{if(dist[u]+d<dist[v]){dist[v]=dist[u]+d;prev[v]=u;}});}
@@ -391,7 +394,7 @@ let isNarr=false,mode="landing",readOnly=false;
 let S=null,CH={},MINE=null,RAWLOG=[],ONLINE=new Set();
 let tab="luogo",landingErr="",busyMsg="";
 let rollForm={who:"",mode:"attacco",mod:0,target:4,inc:false,expr:"d6",ex:true,weapon:0};
-let travelTo=null,pilotOn=null,modal=null;
+let travelTo=null,pilotOn=null,captainOn=null,modal=null;
 let chain=Promise.resolve(),pending=0,refetchT=null;
 
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
@@ -561,11 +564,12 @@ const A={
   delHelper(k){const h=S.hel[k];upd({hel:{[k]:null}});addLog(`${h.name} lascia il gruppo.`);},
   day(d){if(S.final)return;const v=Math.max(0,S.day+d);upd({day:v});addLog(`Giorno ${v} di 40.`);},
   activity(i){if(S.final)return;const [n,dd]=ACTS[i];const v=S.day+dd;upd({day:v});addLog(`${n} a ${S.loc} (+${dd}). Giorno ${v} di 40.`);},
-  travel(){if(!travelTo||!S.loc)return;const p=pilot();const r=shortest(S.loc,travelTo,p);const v=S.final?S.day:S.day+r.days;
-    upd({loc:travelTo,day:v});addLog(`Viaggio ${r.path.join(" → ")} (${r.days} ${r.days>1?"giorni":"giorno"}). Giorno ${v} di 40.`);travelTo=null;},
+  travel(){if(!travelTo||!S.loc)return;const p=pilot(),cp=captain();const r=shortest(S.loc,travelTo,p,cp);const sp=r.path.slice(1).map((b,i)=>[r.path[i],b]).filter(([x,y])=>!EDGES.some(([u,w])=>(u===x&&w===y)||(u===y&&w===x)));r.via=sp.map(([x,y])=>`${p&&AIR.includes(x)&&AIR.includes(y)?"in aereo":"per nave"} ${x}–${y}`).join(", ");const v=S.final?S.day:S.day+r.days;
+    upd({loc:travelTo,day:v});addLog(`Viaggio ${r.path.join(" → ")} (${r.days} ${r.days>1?"giorni":"giorno"}${r.via?", "+r.via:""}). Giorno ${v} di 40.`);travelTo=null;},
   setLocTo(){if(!travelTo)return;const l=travelTo;travelTo=null;upd({loc:l});addLog(`Il gruppo è ora a ${l}.`);},
   pick(l){if(!isNarr)return;travelTo=l===S.loc?null:l;render();},
   togglePilot(){pilotOn=!pilot();render();},
+  toggleCaptain(){captainOn=!captain();render();},
   async clue(){const k=["c1","c2","c3"].find(k=>S.clues[k]==null);if(!k)return;let r;try{r=await getD6("Nuovo indizio");}catch(e){return;}upd({clues:{[k]:r},last:{who:"",text:"Nuovo indizio",total:r,res:`Indizio ${k.slice(1)}/3`,dice:[r],ts:Date.now()}});addLog(`Nuovo indizio! Tiro: ${r}.`);},
   clueDel(k){upd({clues:{[k]:null}});},
   final(){upd({final:!S.final});addLog(S.final?"L'Incontro finale è cominciato.":"Incontro finale annullato.");},
@@ -584,6 +588,7 @@ const A={
   modalOk(){const f=modal.fn;modal=null;f();render();},
   modalNo(){modal=null;render();}
 };
+function captain(){if(captainOn!==null)return captainOn;return Object.values(S.hel).some(h=>h&&/capitan/i.test(h.name));}
 function pilot(){if(pilotOn!==null)return pilotOn;return Object.values(S.hel).some(h=>h&&/pilot/i.test(h.name));}
 function members(){
   const out=[];
@@ -1231,7 +1236,7 @@ function mapSvg(r){
   return svg+`</svg>`;
 }
 function viewMap(){
-  const p=pilot();const r=travelTo&&S.loc?shortest(S.loc,travelTo,p):null;
+  const p=pilot(),cp=captain();const r=travelTo&&S.loc?shortest(S.loc,travelTo,p,cp):null;
   return `<div class="card"><h2>Giorni</h2>
     <div class="row"><span class="stat">Giorno <b>${S.day}</b>/40</span><button class="sm" data-a="day" data-d="-1">−1</button><button class="sm" data-a="day" data-d="1">+1</button>
       <button class="sm ${S.final?"pri":""}" data-a="final">${S.final?"Incontro finale in corso":"Inizia l'incontro finale"}</button></div>
@@ -1239,7 +1244,8 @@ function viewMap(){
     ${S.day>=40&&!S.final?`<p class="banner ko">Sono passati 40 giorni senza Incontro finale: il rituale si compie.</p>`:""}</div>
   <div class="grid2"><div class="card"><h2>Viaggio</h2>
     <p class="muted">Tocca un luogo per calcolare il percorso più breve. ${mapLegend()}</p>
-    <div class="row"><label style="flex-direction:row;align-items:center;gap:6px" for="pil"><input id="pil" type="checkbox" style="width:auto;min-height:0" data-a="togglePilot" ${p?"checked":""}> Pilota nel gruppo (aeroporti a 1 giorno)</label></div>
+    <div class="row"><label style="flex-direction:row;align-items:center;gap:6px" for="pil"><input id="pil" type="checkbox" style="width:auto;min-height:0" data-a="togglePilot" ${p?"checked":""}> Pilota d'aereo nel gruppo (aeroporti a 1 giorno)</label>
+      <label style="flex-direction:row;align-items:center;gap:6px" for="cap"><input id="cap" type="checkbox" style="width:auto;min-height:0" data-a="toggleCaptain" ${cp?"checked":""}> Capitano di mare nel gruppo (New York, Boston, Kingsport, Innsmouth a 1 giorno; New York–New Orleans 2 giorni)</label></div>
     ${r?`<div class="result">${esc(r.path.join(" → "))}<br><b class="num">${r.days}</b> ${r.days>1?"giorni":"giorno"} · arrivo al giorno <b class="num">${S.day+r.days}</b></div>
       <div class="row"><button class="pri" data-a="travel">Viaggia fino a ${esc(travelTo)}</button><button data-a="setLocTo">Sposta senza contare i giorni</button></div>`:`<p class="muted">Nessuna destinazione scelta.</p>`}
     ${mapSvg(r)}</div>
