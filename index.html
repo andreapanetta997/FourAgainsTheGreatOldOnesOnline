@@ -86,7 +86,7 @@ main{padding:12px 16px 40px;display:grid;gap:14px;max-width:1100px;margin:0 auto
 .checks .loc .bx{display:flex;gap:4px;margin-top:4px}
 .bx button{width:28px;min-height:28px;padding:0;font-family:var(--mono);font-size:13px}
 .bx button.on{background:var(--blood);border-color:var(--blood);color:#fff;text-decoration:line-through}
-svg.map{width:100%;height:auto;background:#120f19;border:1px solid var(--line);border-radius:8px;touch-action:manipulation}
+svg.map{width:100%;height:auto;background:#130f1d;border:1px solid var(--line);border-radius:8px;touch-action:manipulation}
 svg.map text{font-family:var(--body);fill:var(--paper)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
 .modal .card{max-width:420px;width:100%}
@@ -168,7 +168,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.2.3</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.3</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -1172,9 +1172,17 @@ function viewCombat(){
     <div class="row"><label style="flex-direction:row;align-items:center;gap:6px" for="fInc"><input id="fInc" type="checkbox" style="width:auto;min-height:0"> Incorporei</label><button class="pri" data-a="addFoe">Aggiungi</button></div>
     <div class="row"><span class="muted">PE e minion:</span><button class="sm" data-a="minion" data-p="1">+1 minion</button><button class="sm" data-a="xp" data-p="1">+1 PE</button><button class="sm" data-a="xp" data-p="-1">−1 PE</button></div></div>`;
 }
+const MAP_BG=`<g aria-hidden="true">
+<rect x="80" y="170" width="1060" height="1290" fill="#130f1d"/>
+<g stroke="#2a2340" stroke-width="1.5" stroke-dasharray="6 10" fill="none">${[300,500,700,900,1100,1300].map(y=>`<path d="M80 ${y}Q610 ${y-30} 1140 ${y}"/>`).join("")}${[250,450,650,850,1050].map(x=>`<path d="M${x} 170Q${x+20} 815 ${x} 1460"/>`).join("")}</g>
+<path d="M95 170H1035L1050 230 1012 290 1036 345 980 395 1010 455 962 520 1006 585 972 650 1000 720 962 790 990 860 944 930 980 1000 935 1080 960 1150 912 1200 948 1265 980 1340 968 1410 990 1460H918L902 1400 882 1350 840 1372 790 1355 735 1388 680 1366 620 1392 560 1370 505 1396 440 1376 380 1410 330 1395 300 1460H150L132 1390 160 1320 140 1250 168 1180 145 1110 172 1040 150 965 170 890 146 820 166 740 140 660 160 580 136 500 155 420 130 340 150 260 128 200Z" fill="#1e1830" stroke="#4a3f63" stroke-width="2.4" stroke-linejoin="round"/>
+<g fill="#130f1d" stroke="#4a3f63" stroke-width="1.8"><path d="M330 560c30-14 90-14 120 0-24 14-92 16-120 0z"/><path d="M425 625c14 20 16 80 2 118-16-10-18-90-2-118z"/><path d="M500 610c24 6 42 30 40 62-20-4-44-34-40-62z"/><path d="M575 745c34-12 74-8 98 2-28 12-70 12-98-2z"/><path d="M690 700c26-10 56-8 74 0-20 10-54 10-74 0z"/></g>
+<g stroke="#3a3352" stroke-width="2" fill="none" stroke-linecap="round">${[[1060,420],[1080,620],[1050,820],[1085,1020],[1050,1230],[1090,1400],[700,1440],[480,1440],[110,560],[105,960],[112,1330]].map(([x,y])=>`<path d="M${x-22} ${y}q11-9 22 0t22 0"/>`).join("")}</g>
+<g transform="translate(1078 268)" stroke="#6b5c8c" fill="none" stroke-width="1.6"><circle r="44"/><circle r="36" stroke-dasharray="3 5"/><path d="M0-58 9-9 58 0 9 9 0 58-9 9-58 0-9-9Z" fill="#251d38"/><path d="M0-58 0 58M-58 0 58 0" stroke-width="1"/><text y="-64" text-anchor="middle" font-size="22" fill="#8e7fb0" stroke="none" style="font-family:var(--display)">N</text></g>
+</g>`;
 function mapSvg(r){
   const onPath=new Set();if(r)for(let i=0;i<r.path.length-1;i++){onPath.add(r.path[i]+"|"+r.path[i+1]);onPath.add(r.path[i+1]+"|"+r.path[i]);}
-  let svg=`<svg class="map" viewBox="120 190 960 1240" role="img" aria-label="Mappa dei luoghi con i giorni di viaggio">`;
+  let svg=`<svg class="map" viewBox="80 170 1060 1290" role="img" aria-label="Mappa dei luoghi con i giorni di viaggio">${MAP_BG}`;
   EDGES.forEach(([a,b,d])=>{const [x1,y1]=POS[a],[x2,y2]=POS[b];const hot=onPath.has(a+"|"+b);
     svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${hot?"#d6b25e":"#463d58"}" stroke-width="${hot?7:3}"/><text x="${(x1+x2)/2+8}" y="${(y1+y2)/2-6}" font-size="28" style="fill:${hot?"#d6b25e":"#a9a1ba"}">${d}</text>`;});
   if(r)for(let i=0;i<r.path.length-1;i++){const a=r.path[i],b=r.path[i+1];if(!EDGES.some(([x,y])=>(x===a&&y===b)||(x===b&&y===a))){const [x1,y1]=POS[a],[x2,y2]=POS[b];svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#d6b25e" stroke-width="5" stroke-dasharray="14 10"/>`;}}
