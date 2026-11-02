@@ -177,6 +177,7 @@ body.screen-mode{overflow:hidden}
 .scr-checks{grid-template-columns:repeat(4,minmax(0,1fr))}
 .scr-checks .bx span{width:36px;height:36px;font-size:19px}
 .scr-map svg text{font-size:36px}
+.bosslist{display:flex;flex-direction:column;gap:4px;font-size:15px}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -185,7 +186,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.5.9</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.6</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -403,7 +404,7 @@ function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(
 function freshState(){
   return {gid:uid(),phase:"setup",day:0,loc:"",final:false,minions:0,xp:0,
     clues:{c1:null,c2:null,c3:null},roster:{s1:null,s2:null,s3:null,s4:null},
-    hel:{},foes:{},checks:{},recUsed:{},tomorrow:null,enc:null,combat:{on:false,helpers:{}},notes:"",last:null};
+    hel:{},foes:{},checks:{},recUsed:{},bossSel:{},tomorrow:null,enc:null,combat:{on:false,helpers:{}},notes:"",last:null};
 }
 function newInv(cls){const c=CL[cls];const used={};c.ctr.forEach(x=>used[x.k]=0);
   return {cls,lvl:1,life:c.L+1,san:c.S+1,arms:(ARMS[cls]||[]).map(a=>mkArm(a[0],a[1],a[2])),items:"",spells:"",notes:"",used};}
@@ -720,12 +721,24 @@ const S1={
     const enc={};for(let n=e.min;n<=e.max;n++)enc[n]=Math.max(0,Math.min(3,+e.enc[n]||0));e.enc=enc;
     e.rec=e.rec.filter(r=>r.kind==="inv"?r.cls:r.name).map(r=>({...r,id:r.id||uid()}));
     e.arms=e.arms.filter(a=>a.name);
+    if(e.boss){const b=e.boss;["L","life","atk","dmg","days"].forEach(f=>b[f]=Math.max(f==="days"?0:1,+b[f]||0));b.inc=!!b.inc&&b.inc!=="false";b.hel=!!b.hel&&b.hel!=="false";
+      b.conds=b.conds.filter(c=>c.label||c.cls).map(c=>({...c,mod:+c.mod||0}));}
     LIB=merge(LIB,{locs:{[S.loc]:null}});LIB.locs[S.loc]=e;locEdit=null;render();
     q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[S.loc]:null}}}));
     q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[S.loc]:e}}}));},
   addRec(kind){locEdit.rec.push(kind==="inv"?{kind:"inv",cls:"",days:2,boxes:1,note:""}:{kind:"hel",name:"",min:1,max:1,life:1,san:1,atk:0,days:1,boxes:1,note:""});render();},
   delRec(i){locEdit.rec.splice(+i,1);render();},
   addArm(){locEdit.arms.push({name:"",cat:"N",cond:""});render();},
+  bossOn(){locEdit.boss=locEdit.boss?null:{name:"",L:5,life:5,atk:1,dmg:1,days:0,inc:false,hel:false,note:"",conds:[]};render();},
+  addCond(kind){locEdit.boss.conds.push({id:uid(),label:"",kind:kind||"manual",cls:"",mod:-1,target:"L"});render();},
+  delCond(i){locEdit.boss.conds.splice(+i,1);render();},
+  bossTick(id){const cur=(S.bossSel&&S.bossSel[S.loc]&&S.bossSel[S.loc][id])||false;upd({bossSel:{[S.loc]:{[id]:!cur}}});},
+  bossFight(){const L=locData(S.loc);const B=L&&L.boss;if(!B||S.final&&false)return;const r=bossCalc(B);
+    const days=+B.days||0;const k="f"+uid();
+    const patch={foes:{[k]:{name:B.name||"Boss",L:r.L,kind:"Boss",n:r.life,n0:r.life,inc:!!B.inc,atk:Math.max(1,+B.atk||1),dmg:Math.max(1,+B.dmg||1),hel:!!B.hel}},
+      combat:{on:true,round:1,init:false,flee:false,assign:clearMap(S.combat&&S.combat.assign),cres:clearMap(S.combat&&S.combat.cres)}};
+    if(days&&!S.final)patch.day=S.day+days;
+    upd(patch);addLog(`Scontro con ${B.name||"il boss"}: Livello ${r.L}, Vita ${r.life}${r.parts.length?" ("+r.parts.join("; ")+")":""}${days?`. +${days} ${days>1?"giorni":"giorno"}`:""}.`);tab="combatt";render();},
   delArm(i){locEdit.arms.splice(+i,1);render();},
 
   /* ---------- investigate ---------- */
@@ -849,7 +862,7 @@ function computeAssign(){
   const atk=[];
   Object.entries(S.foes).forEach(([fid,f])=>{if(!f||!f.name||f.n<=0)return;
     const times=f.kind==="Boss"?Math.max(1,+f.atk||1):f.n;
-    for(let i=0;i<times;i++)atk.push({fid,fname:f.name,L:f.L,dmg:Math.max(1,+f.dmg||1),boss:f.kind==="Boss"});});
+    for(let i=0;i<times;i++)atk.push({fid,fname:f.name,L:f.L,dmg:Math.max(1,+f.dmg||1),boss:f.kind==="Boss"&&!f.hel});});
   atk.sort((a,b)=>b.boss-a.boss);
   const out={};let i=0;
   atk.forEach(a=>{const pool=T.filter(t=>a.boss?t.inv:true);if(!pool.length)return;
@@ -869,6 +882,25 @@ function applyAttack(fid,wounds,who){
   else if(f.kind==="Vermin"&&v<f.n0/2&&f.n>=f.n0/2)msg+=". Hanno perso più di metà del gruppo e fuggono";
   upd(patch);addLog(msg+".",who);
 }
+
+/* ---------- configurable boss: each condition lowers (or raises) Level or Life ---------- */
+function bossCondOn(c){
+  if(c.kind==="cls")return SLOTS.some(k=>{const v=invOf(k);return v&&v.cls===c.cls&&alive(v);});
+  return !!(S.bossSel&&S.bossSel[S.loc]&&S.bossSel[S.loc][c.id]);
+}
+function bossCalc(B){let L=+B.L||1,life=+B.life||1;const parts=[];
+  (B.conds||[]).forEach(c=>{if(!bossCondOn(c))return;const m=+c.mod||0;if(c.target==="life")life+=m;else L+=m;
+    parts.push(`${c.label||(CL[c.cls]?CL[c.cls].n+" nel gruppo":"condizione")} ${m>0?"+":""}${m} ${c.target==="life"?"Vita":"Livello"}`);});
+  return {L:Math.max(1,L),life:Math.max(1,life),parts};}
+function bossCard(L){const B=L.boss;if(!B)return "";const r=bossCalc(B);
+  return `<div class="card" style="border-color:#f09595"><div class="row sb"><h3 class="hcard">${foeBadge({kind:"Boss",inc:B.inc})}${esc(B.name||"Boss")}</h3>
+    <span class="stat">Livello <b class="ko">${r.L}</b><span class="muted">/${B.L}</span> · Vita <b class="ko">${r.life}</b><span class="muted">/${B.life}</span></span></div>
+    ${B.note?`<p class="muted">${esc(B.note)}</p>`:""}
+    ${(B.conds||[]).length?`<div class="bosslist">${B.conds.map(c=>{const on=bossCondOn(c);const lab=c.label||(CL[c.cls]?CL[c.cls].n+" nel gruppo":"");const val=`${c.mod>0?"+":""}${c.mod} ${c.target==="life"?"Vita":"Liv."}`;
+      return c.kind==="cls"?`<div class="row sb"><span class="hcard">${CL[c.cls]?ico(c.cls,18):""}${esc(lab)} <span class="muted">(automatico)</span></span><span class="${on?"ok":"muted"}">${on?"sì":"no"} → ${on?val:"0"}</span></div>`
+        :`<div class="row sb"><label style="flex-direction:row;align-items:center;gap:8px;font-size:15px;color:var(--paper)" for="bc-${c.id}"><input id="bc-${c.id}" type="checkbox" style="width:auto;min-height:0" data-a="s1" data-f="bossTick" data-p="${c.id}" ${on?"checked":""}> ${esc(lab)}</label><span class="${on?"ok":"muted"}">${on?val:"0"}</span></div>`;}).join("")}</div>`:`<p class="muted">Nessuna condizione inserita.</p>`}
+    <div class="row"><span class="muted">${B.atk>1?`${B.atk} attacchi per round · `:""}${B.dmg>1?`${B.dmg} ferite per colpo · `:""}${B.inc?"incorporeo · ":""}${B.hel?"gli helper partecipano · ":""}${+B.days?`${B.days} ${B.days>1?"giorni":"giorno"} per tentativo`:""}</span></div>
+    <div class="row"><button class="pri" data-a="s1" data-f="bossFight" ${S.combat&&S.combat.on?"disabled":""}>Affronta ${esc(B.name||"il boss")}</button></div></div>`;}
 
 /* ================= views ================= */
 function viewLocation(){
@@ -890,6 +922,7 @@ function viewLocation(){
       ${tm?`<span class="chip me">domani ${tm>0?"+":""}${tm}</span>`:""}</div>
     <div class="row"><button class="pri" data-a="s1" data-f="investigate" ${S.final?"disabled":""}>Indaga</button></div>
   </div>
+  ${bossCard(L)}
   ${encCard()}
   <div class="card"><h3>Reclutare</h3>
     ${L.rec.length?L.rec.map(r=>{const u=recUsed(S.loc,r.id),b=+r.boxes||1,left=b-u;
@@ -959,6 +992,26 @@ function viewLocEdit(){
       <input id="le-a${i}x" aria-label="Condizione" placeholder="condizione (facoltativa)" data-le="arms.${i}.cond" value="${esc(a.cond||"")}" style="flex:2">
       <button class="sm danger" data-a="s1" data-f="delArm" data-p="${i}" aria-label="togli">×</button></div>`).join("")}
     <div class="row"><button class="sm" data-a="s1" data-f="addArm">+ Arma</button></div>
+    <h3>Boss del luogo</h3>
+    ${e.boss?(()=>{const b=e.boss;return `<div class="card" style="background:#1a1624">
+      <div class="f"><label for="le-bn">Nome<input id="le-bn" data-le="boss.name" value="${esc(b.name)}"></label>
+      <label for="le-bL">Livello base<input id="le-bL" type="number" data-le="boss.L" value="${b.L}"></label>
+      <label for="le-bv">Vita base<input id="le-bv" type="number" data-le="boss.life" value="${b.life}"></label>
+      <label for="le-ba">Attacchi per round<input id="le-ba" type="number" min="1" data-le="boss.atk" value="${b.atk}"></label>
+      <label for="le-bd">Ferite per colpo<input id="le-bd" type="number" min="1" data-le="boss.dmg" value="${b.dmg}"></label>
+      <label for="le-bg">Giorni per tentativo<input id="le-bg" type="number" min="0" data-le="boss.days" value="${b.days}"></label>
+      <label for="le-bi">Incorporeo<select id="le-bi" data-le="boss.inc">${opt(String(!!b.inc),[["false","no"],["true","sì"]])}</select></label>
+      <label for="le-bh">Gli helper combattono<select id="le-bh" data-le="boss.hel">${opt(String(!!b.hel),[["false","no"],["true","sì"]])}</select></label></div>
+      <label for="le-bt">Note (fuga, regole speciali)<input id="le-bt" data-le="boss.note" value="${esc(b.note)}"></label>
+      <h3>Condizioni</h3>
+      ${b.conds.map((c,i)=>`<div class="row" style="align-items:flex-end">
+        ${c.kind==="cls"?`<label for="le-c${i}k" style="flex:2">È presente…<select id="le-c${i}k" data-le="boss.conds.${i}.cls">${opt(c.cls,[["","—"],...Object.entries(CL).map(([k,x])=>[k,x.n])])}</select></label>`
+          :`<label for="le-c${i}l" style="flex:2">Condizione<input id="le-c${i}l" placeholder="ha scartato un oggetto…" data-le="boss.conds.${i}.label" value="${esc(c.label)}"></label>`}
+        <label for="le-c${i}m" style="flex:1">Se sì<input id="le-c${i}m" type="number" data-le="boss.conds.${i}.mod" value="${c.mod}"></label>
+        <label for="le-c${i}t" style="flex:1">Su<select id="le-c${i}t" data-le="boss.conds.${i}.target">${opt(c.target,[["L","Livello"],["life","Vita"]])}</select></label>
+        <button class="sm danger" data-a="s1" data-f="delCond" data-p="${i}" aria-label="togli">×</button></div>`).join("")}
+      <div class="row"><button class="sm" data-a="s1" data-f="addCond" data-p="cls">+ È presente un personaggio</button><button class="sm" data-a="s1" data-f="addCond" data-p="manual">+ Condizione manuale</button><button class="sm danger" data-a="s1" data-f="bossOn">Togli il boss</button></div></div>`;})()
+      :`<div class="row"><button class="sm" data-a="s1" data-f="bossOn">+ Aggiungi un boss a questo luogo</button></div>`}
     <div class="row"><button class="pri" data-a="s1" data-f="saveLoc">Salva</button><button data-a="s1" data-f="cancelLoc">Annulla</button></div></div>`;
 }
 function armsBlock(slot,s){
