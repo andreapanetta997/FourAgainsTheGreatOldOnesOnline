@@ -185,7 +185,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.5.6</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.5.7</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -221,10 +221,10 @@ const CL = {
   detective:{n:"Detective",L:5,S:3,w:"Pistola (Potente), Tirapugni (Normale)",pref:"Normali, Potenti, Speciali, Sperimentali",att:"L/2",
     ab:["+½L (per difetto) agli attacchi","+½L ai test di Sapere oppure di Occulto (scelto all'ingresso)"],ctr:[]}
 };
-const POS = {"Townshend":[265,243],"Innsmouth":[800,245],"The Backwoods":[338,415],"Arkham":[655,447],"Kingsport":[935,535],
+const POS = {"Townshend":[265,243],"Innsmouth":[800,245],"I Boschi":[338,415],"Arkham":[655,447],"Kingsport":[935,535],
  "Dunwich":[408,548],"Salem":[630,627],"Boston":[645,753],"Chicago":[395,805],"Providence":[945,843],"St. Louis":[200,878],
  "Catskill Mountains":[612,965],"New York":[918,1055],"San Francisco":[237,1090],"New Orleans":[585,1310],"Los Angeles":[243,1345],"Big Cypress Swamp":[930,1375]};
-const EDGES = [["Townshend","The Backwoods",1],["The Backwoods","Arkham",1],["The Backwoods","Dunwich",1],["Dunwich","Arkham",1],
+const EDGES = [["Townshend","I Boschi",1],["I Boschi","Arkham",1],["I Boschi","Dunwich",1],["Dunwich","Arkham",1],
  ["Dunwich","Salem",1],["Arkham","Innsmouth",1],["Arkham","Kingsport",1],["Arkham","Salem",1],["Salem","Kingsport",1],["Salem","Boston",1],
  ["Kingsport","Boston",1],["Boston","Chicago",3],["Boston","Providence",1],["Boston","Catskill Mountains",2],["Providence","Catskill Mountains",2],
  ["Providence","New York",1],["Catskill Mountains","New York",2],["Chicago","St. Louis",1],["Chicago","Catskill Mountains",2],
@@ -419,7 +419,7 @@ async function refetch(){
   try{
     if(role==="narr"&&TOKEN){
       const d=await rpc("narr_get",{p_token:TOKEN});if(pending)return;
-      S=merge(freshState(),d.state||{});CH=d.chars||{};RAWLOG=d.log||[];LIB=merge({locs:{}},d.lib||{});setGame(d.game_id);
+      S=merge(freshState(),d.state||{});CH=d.chars||{};RAWLOG=d.log||[];LIB=merge({locs:{}},d.lib||{});setGame(d.game_id);migrateNames();
       if(!VIEWCODE)SCR.narrCode();
     }else if(role==="player"&&Object.keys(CODES).length){
       const res={},add={};let gid=null,st=null,log=null;
@@ -451,6 +451,21 @@ async function refetch(){
     }else conn("connessione persa","dead");
   }
   render();
+}
+// renamed locations: old saved names are moved to the new ones once, by the narrator
+const RENAMED={"The Backwoods":"I Boschi"};
+function migrateNames(){
+  if(!isNarr||!S)return;const p={};
+  for(const [o,n] of Object.entries(RENAMED)){
+    if(S.loc===o)p.loc=n;
+    if(S.checks&&S.checks[o]){p.checks=Object.assign(p.checks||{},{[n]:S.checks[o],[o]:null});}
+    if(S.recUsed&&S.recUsed[o]){p.recUsed=Object.assign(p.recUsed||{},{[n]:S.recUsed[o],[o]:null});}
+    if(S.tomorrow&&S.tomorrow.loc===o)p.tomorrow={...S.tomorrow,loc:n};
+    if(S.enc&&S.enc.loc===o)p.enc={...S.enc,loc:n};
+    if(LIB.locs&&LIB.locs[o]&&!LIB.locs[n]){const d=LIB.locs[o];LIB.locs[n]=d;delete LIB.locs[o];
+      q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[n]:d}}}));q(()=>rpc("narr_set_lib",{p_token:TOKEN,p_patch:{locs:{[o]:null}}}));}
+  }
+  if(Object.keys(p).length)upd(p);
 }
 function setGame(id){
   if(gameId===id&&chan)return;
