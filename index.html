@@ -186,7 +186,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.6</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.6.1</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -209,18 +209,18 @@ const CL = {
     ab:["Cura: d6 Vita tra attività, d3 durante un incontro o in combattimento (è la sua azione)","Conforto: azione gratuita, evita la perdita di 1 Sanità"],
     ctr:[{k:"cura",n:"Cure",max:"L"},{k:"conforto",n:"Conforti",max:"L"}]},
   professore:{n:"Professore",L:4,S:5,w:"Coltello (Normale)",pref:"Normali, Sperimentali",att:0,
-    ab:["+L ai propri test di Sapere","Incantesimi dal L2, uno per livello","Studente gratuito (Boston, Providence, Arkham, New York, St. Louis, San Francisco)"],
+    ab:["+L ai propri test di Conoscenza","Incantesimi dal L2, uno per livello","Studente gratuito (Boston, Providence, Arkham, New York, St. Louis, San Francisco)"],
     ctr:[{k:"studente",n:"Studenti gratis",max:"L"}],spells:true},
   spia:{n:"Spia",L:4,S:3,w:"Coltello (Normale), Pistola (Potente)",pref:"Normali, Potenti, Speciali",att:0,
     ab:["+L in attacco contro gli umani","Recluta un investigatore in 1 giorno invece di 2","Rinforzi federali: tutti i cultisti di un combattimento sconfitti (no PE, no incontro finale)"],
     ctr:[{k:"zio",n:"Reclute rapide",max:"L"},{k:"fed",n:"Rinforzi federali",max:1}]},
   veterano:{n:"Veterano",L:6,S:3,w:"Baionetta (Normale), Fucile (Potente)",pref:"Normali, Potenti, Speciali",att:"L",
-    ab:["+L a tutti gli attacchi","Lanciafiamme a +3 invece di +1","Non può fare test di Occulto o Sapere"],ctr:[]},
+    ab:["+L a tutti gli attacchi","Lanciafiamme a +3 invece di +1","Non può fare test di Occulto o Conoscenza"],ctr:[]},
   gangster:{n:"Gangster",L:6,S:3,w:"Pistola (Potente), Tirapugni (Normale), Tommy Gun (Speciale)",pref:"Normali, Potenti, Speciali",att:"L",
-    ab:["+L a tutti gli attacchi","Porta 3 armi","Non può fare test di Occulto o Sapere"],
+    ab:["+L a tutti gli attacchi","Porta 3 armi","Non può fare test di Occulto o Conoscenza"],
     ctr:[{k:"tommy",n:"Combattimenti col Tommy Gun",max:3}]},
   detective:{n:"Detective",L:5,S:3,w:"Pistola (Potente), Tirapugni (Normale)",pref:"Normali, Potenti, Speciali, Sperimentali",att:"L/2",
-    ab:["+½L (per difetto) agli attacchi","+½L ai test di Sapere oppure di Occulto (scelto all'ingresso)"],ctr:[]}
+    ab:["+½L (per difetto) agli attacchi","+½L ai test di Conoscenza oppure di Occulto (scelto all'ingresso)"],ctr:[]}
 };
 const POS = {"Townshend":[265,243],"Innsmouth":[800,245],"I Boschi":[338,415],"Arkham":[655,447],"Kingsport":[935,535],
  "Dunwich":[408,548],"Salem":[630,627],"Boston":[645,753],"Chicago":[395,805],"Providence":[945,843],"St. Louis":[200,878],
@@ -608,12 +608,12 @@ async function doRoll2(){
     total=dice.reduce((a,b)=>a+b,0)+(+f.mod||0);text=`Tiro libero ${f.expr}${+f.mod?(f.mod>0?"+":"")+f.mod:""}`;
     if(f.expr==="3d6")res=`alto ${Math.max(...dice)}, basso ${Math.min(...dice)}`;
   }else{
-    const lab={attacco:"attacco",difesa:"difesa",sanita:"test di Sanità",sapere:"test di Sapere",occulto:"test di Occulto"}[f.mode];dice=f.ex?await getEx(`${who}: ${lab}`):[await getD6(`${who}: ${lab}`)];const wm=m&&m.s?(f.weapon==="u"?-1:((armsOf(m.s)[+f.weapon||0]||{}).mod||0)):(m&&m.h?0:(+f.weapon||0));const mod=(+f.mod||0)+(f.mode==="attacco"?wm:0);
+    const lab={attacco:"attacco",difesa:"difesa",sanita:"test di Sanità",sapere:"test di Conoscenza",occulto:"test di Occulto"}[f.mode];dice=f.ex?await getEx(`${who}: ${lab}`):[await getD6(`${who}: ${lab}`)];const wm=m&&m.s?(f.weapon==="u"?-1:((armsOf(m.s)[+f.weapon||0]||{}).mod||0)):(m&&m.h?0:(+f.weapon||0));const mod=(+f.mod||0)+(f.mode==="attacco"?wm:0);
     total=dice.reduce((a,b)=>a+b,0)+mod;const T=Math.max(1,+f.target||1);const ms2=mod>=0?"+"+mod:mod;
     if(f.mode==="attacco"){const hits=Math.floor(total/T);const incOk=m&&m.s&&CL[m.s.cls].inc;const w=f.inc&&!incOk?Math.floor(hits/2):hits;
       text=`Attacco vs L${T}${f.inc?" incorporeo":""} (${ms2})`;res=hits===0?"Mancato":`${hits} ${hits>1?"colpi":"colpo"} → ${w} ${w===1?"ferita":"ferite"}`;var _apply=f.fid&&w>0?[f.fid,w]:null;}
     else if(f.mode==="difesa"){text=`Difesa vs L${T} (${ms2})`;res=total>=T?"Schivato":"Colpito";}
-    else{text=`Test di ${{sanita:"Sanità",sapere:"Sapere",occulto:"Occulto"}[f.mode]} ${T} (${ms2})`;res=total>=T?"Superato":"Fallito";}
+    else{text=`Test di ${{sanita:"Sanità",sapere:"Conoscenza",occulto:"Occulto"}[f.mode]} ${T} (${ms2})`;res=total>=T?"Superato":"Fallito";}
   }
   const ok=/Superato|Schivato/.test(res)||/→ [1-9]/.test(res)?true:/Fallito|Colpito|Mancato|→ 0/.test(res)?false:null;
   upd({last:{who,text,total,res,ok,dice,ts:Date.now()}});
@@ -793,7 +793,7 @@ const S1={
     if(!p||!STUDENT_CITIES.includes(S.loc))return;
     if(helpers().length>=4){alertBox("Avete già 4 helper.");return;}
     invUpd(p,{used:{studente:(invOf(p).used.studente||0)+1}});
-    upd({hel:{["h"+uid()]:{name:"Studente",life:1,lmax:1,san:2,smax:2,atk:0,note:"+1 ai test di Sapere (non cumulabile tra studenti)"}}});
+    upd({hel:{["h"+uid()]:{name:"Studente",life:1,lmax:1,san:2,smax:2,atk:0,note:"+1 ai test di Conoscenza (non cumulabile tra studenti)"}}});
     addLog("Il Professore recluta uno studente (azione gratuita).");
   },
 
@@ -1228,11 +1228,11 @@ function viewDice(){
   const f=rollForm;const ms=members();const m=isNarr?ms.find(x=>x.id===f.who):(ms.find(x=>x.id===f.who)||ms[0]);
   let hint="";
   if(m&&m.s){const b=classBonus(m.s),L=m.s.lvl,c=m.s.cls;
-    hint=[b?`bonus di classe +${b} agli attacchi`:"",c==="medium"?`+${L} contro i non-morti`:"",c==="spia"?`+${L} contro gli umani`:"",c==="professore"?`+${L} ai test di Sapere`:"",
-      c==="occultista"?`+${L} ai test di Occulto`:"",c==="detective"?`+${Math.floor(L/2)} a Sapere o Occulto`:"",CL[c].inc?"ferisce gli incorporei 1 per colpo":"",
-      (c==="veterano"||c==="gangster")?"niente test di Occulto o Sapere":""].filter(Boolean).join(" · ");}
+    hint=[b?`bonus di classe +${b} agli attacchi`:"",c==="medium"?`+${L} contro i non-morti`:"",c==="spia"?`+${L} contro gli umani`:"",c==="professore"?`+${L} ai test di Conoscenza`:"",
+      c==="occultista"?`+${L} ai test di Occulto`:"",c==="detective"?`+${Math.floor(L/2)} a Conoscenza o Occulto`:"",CL[c].inc?"ferisce gli incorporei 1 per colpo":"",
+      (c==="veterano"||c==="gangster")?"niente test di Occulto o Conoscenza":""].filter(Boolean).join(" · ");}
   const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);
-  const modes=[["attacco","Attacco"],["difesa","Difesa"],["sanita","Test di Sanità"],["sapere","Test di Sapere"],["occulto","Test di Occulto"],["libero","Tiro libero"]];
+  const modes=[["attacco","Attacco"],["difesa","Difesa"],["sanita","Test di Sanità"],["sapere","Test di Conoscenza"],["occulto","Test di Occulto"],["libero","Tiro libero"]];
   const ck=(id,k,lab)=>`<label style="flex-direction:row;align-items:center;gap:6px" for="${id}"><input id="${id}" type="checkbox" style="width:auto;min-height:0" data-rf="${k}" ${f[k]?"checked":""}> ${lab}</label>`;
   return `<div class="card"><h2>Tira i dadi</h2><p class="muted">Ogni tiro compare in alto e nel diario di tutti. I 6 esplodono nelle azioni dei personaggi.</p>
     <div class="f">${isNarr||ms.length>1?`<label for="rWho">Chi tira<select id="rWho" data-rf="who">${isNarr?`<option value="">Narratore / nessuno</option>`:""}${ms.map(x=>`<option value="${x.id}" ${(m&&m.id===x.id)?"selected":""}>${esc(x.label)}</option>`).join("")}</select></label>`:`<label>Chi tira<input value="${esc(m?m.label:"")}" disabled></label>`}
