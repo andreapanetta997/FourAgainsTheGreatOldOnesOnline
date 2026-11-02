@@ -117,6 +117,18 @@ nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 @media (prefers-reduced-motion:no-preference){.toss{animation:toss .9s ease-out}@keyframes toss{0%{transform:translateY(-60px) scale(.7)}55%{transform:translateY(8px) scale(1.04)}75%{transform:translateY(-6px)}100%{transform:none}}}
 .toprow h1{display:flex;align-items:center;gap:8px}
 .landing-logo{display:flex;justify-content:center;padding:8px 0}
+.scr{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));grid-auto-flow:dense}
+.scr .card{gap:6px}
+.scr-map,.scr-foes{grid-row:span 2}
+@media (min-width:1100px){.scr-map{grid-column:span 2}}
+.scr-days{display:flex;align-items:baseline;gap:8px}.scr-days b{font-size:64px;line-height:1;color:var(--paper)}
+.scr-bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}.scr-bar span{display:block;height:100%;background:var(--blood)}
+.scr-big{font-family:var(--display);font-size:34px;line-height:1.1}
+.scr-clue{width:46px;height:46px;border-radius:50%;border:1.5px dashed var(--line);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:22px;color:var(--muted)}
+.scr-clue.on{border:1.5px solid var(--gold);color:var(--gold)}
+.scr-inv{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:88px}.scr-inv.out{opacity:.45}
+.scr-num{display:inline-flex;min-width:30px;height:30px;padding:0 6px;border-radius:6px;background:#3a1a1e;color:#f09595;align-items:center;justify-content:center;font-family:var(--mono)}
+body.screen-mode main{max-width:none}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -125,8 +137,8 @@ nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.0.1</span></h1>
-    <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.1</span></h1>
+    <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
   <div class="lastroll" id="lastroll" hidden></div>
@@ -357,6 +369,7 @@ async function refetch(){
     if(role==="narr"&&TOKEN){
       const d=await rpc("narr_get",{p_token:TOKEN});if(pending)return;
       S=merge(freshState(),d.state||{});CH=d.chars||{};RAWLOG=d.log||[];LIB=merge({locs:{}},d.lib||{});setGame(d.game_id);
+      if(!VIEWCODE)SCR.narrCode();
     }else if(role==="player"&&Object.keys(CODES).length){
       const res={},add={};let gid=null,st=null,log=null;
       for(const [slot,code] of Object.entries({...CODES})){
@@ -375,12 +388,13 @@ async function refetch(){
       if(!rollForm._init){rollForm._init=1;rollForm.who=ACT;rollForm.mod=classBonus(MINE);}
       setGame(gid);setTimeout(()=>{trackMe();sayHere();},0);
       if(grew){busyMsg="Il Narratore ti ha assegnato un altro personaggio.";setTimeout(()=>{busyMsg="";render();},4000);refetchSoon(0);}
-    }
+    }else if(role==="screen"&&VIEW){await refetchScreen();if(pending)return;}
     showConn();mode="ready";
   }catch(e){
     const msg=String(e&&e.message||"");
     if(/non valido/.test(msg)){
       if(role==="narr"){lsSet("4agoo-narr",null);TOKEN=null;landingErr="Codice Narratore non valido.";}
+      else if(role==="screen"){lsSet("4agoo-view",null);VIEW=null;landingErr="Codice dello schermo non valido.";}
       else{CODES={};saveCodes();landingErr="Codice non valido. Ricontrollalo con il Narratore.";MINE=null;MY={};}
       role=null;isNarr=false;mode="landing";S=null;leaveGame();
     }else conn("connessione persa","dead");
@@ -440,8 +454,8 @@ const A={
     busyMsg="";tab="luogo";render();},
   narrLogin(){const t=($("#ntok").value||"").trim().toLowerCase();if(!t)return;TOKEN=t;lsSet("4agoo-narr",t);role="narr";isNarr=true;landingErr="";mode="loading";render();refetch();},
   playerLogin(){const c=($("#pcode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<4)return;CODES={"?":c};saveCodes();MY={};ACT=null;role="player";isNarr=false;landingErr="";mode="loading";tab="pg";render();refetch();},
-  logout(){modal={title:"Uscire da questo dispositivo?",text:isNarr?"Per rientrare come Narratore ti servirà il codice Narratore: copialo prima di uscire. La partita resta salvata.":"Per rientrare ti servirà di nuovo il codice del tuo personaggio.",ok:"Esci",fn:()=>{
-    if(isNarr){lsSet("4agoo-narr",null);TOKEN=null;}else{CODES={};saveCodes();}
+  logout(){modal={title:"Uscire da questo dispositivo?",text:role==="screen"?"Per riaprire lo schermo ti servirà di nuovo il suo codice.":isNarr?"Per rientrare come Narratore ti servirà il codice Narratore: copialo prima di uscire. La partita resta salvata.":"Per rientrare ti servirà di nuovo il codice del tuo personaggio.",ok:"Esci",fn:()=>{
+    if(isNarr){lsSet("4agoo-narr",null);TOKEN=null;}else if(role==="screen"){lsSet("4agoo-view",null);VIEW=null;}else{CODES={};saveCodes();}
     role=null;isNarr=false;S=null;MINE=null;MY={};ACT=null;CH={};mode="landing";leaveGame();}};render();},
   async addCode(){const c=($("#addcode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<4)return;
     try{const d=await rpc("player_get",{p_code:c});if(d.game_id!==gameId){busyMsg="Quel codice è di un'altra partita.";render();return;}
@@ -542,6 +556,7 @@ function render(){
   renderHeader();
   let html="",tabs=[];
   if(mode==="landing")html=viewLanding();
+  else if(role==="screen"&&mode==="ready"&&S)html=viewScreen();
   else if(mode==="loading"||!S)html=`<div class="card"><p class="muted">Caricamento del tavolo…</p></div>`;
   else if(isNarr){
     if(S.phase==="setup")html=viewSetup();
@@ -563,10 +578,12 @@ function render(){
   if(keep){const el=document.getElementById(keep.id);if(el){el.value=keep.v;el.focus();try{el.setSelectionRange(keep.s,keep.e);}catch(e){}}}
 }
 function renderHeader(){
-  $("#role").textContent=role==="narr"?"Narratore":role==="player"?"Giocatore":"";
+  $("#role").textContent=role==="narr"?"Narratore":role==="player"?"Giocatore":role==="screen"?"Schermo giocatori":"";
+  document.body.classList.toggle("screen-mode",role==="screen");
+  const fb=$("#fullbtn");if(fb)fb.hidden=role!=="screen";
   $("#newgame").hidden=!isNarr||mode!=="ready";
   $("#logout").hidden=!role;
-  if(!S||mode==="landing"){$("#stats").innerHTML="";$("#lastroll").hidden=true;return;}
+  if(!S||mode==="landing"||role==="screen"){$("#stats").innerHTML="";$("#lastroll").hidden=true;return;}
   $("#lastroll").hidden=false;
   const nC=["c1","c2","c3"].filter(k=>S.clues[k]!=null).length;
   $("#stats").innerHTML=`<span class="stat ${S.day>=35&&!S.final?"warn":""}">Giorno <b>${S.day}</b>/40${S.final?" · finale":""}</span>
@@ -583,6 +600,9 @@ function viewLanding(){
     <p>Inserisci il codice del tuo investigatore che ti ha dato il Narratore. Non serve nessun account.</p>
     <div class="row"><input id="pcode" maxlength="8" autocomplete="off" autocapitalize="characters" aria-label="Codice personaggio" placeholder="ES. K7QM3A" style="flex:1;font-family:var(--mono);font-size:22px;letter-spacing:.2em;text-transform:uppercase">
     <button class="pri" data-a="playerLogin">Entra</button></div></div>
+  <div class="card"><h2>Schermo giocatori</h2>
+    <p class="muted">Per un tablet o una TV al centro del tavolo: mostra a tutti giorni, luogo, mappa e nemici, senza le schede private.</p>
+    <div class="row"><input id="vcode" maxlength="10" autocomplete="off" autocapitalize="characters" aria-label="Codice dello schermo" placeholder="CODICE SCHERMO" style="flex:1;font-family:var(--mono);letter-spacing:.15em;text-transform:uppercase"><button data-a="scr" data-f="login">Apri lo schermo</button></div></div>
   <div class="card"><h2>Sono il Narratore</h2>
     <p class="muted">Crea una partita: scegli gli investigatori e la pagina genera un codice per ogni giocatore.</p>
     <div class="row"><button class="pri" data-a="createGame">Crea una nuova partita</button></div>
@@ -895,6 +915,54 @@ function myDefenses(){
   return `<div class="card" style="border-color:var(--blood)"><h3>Ti stanno attaccando</h3>${mine.map(([k,a])=>{const r=cr[k];const fx=S.foes[a.fid]||{kind:a.boss?"Boss":"Minion"};return `<div class="row sb"><span class="hcard">${many?`${ico(MY[a.tgt].cls,18)}<b>${esc(a.tname)}</b> ← `:""}${foeBadge(fx)} ${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="pri sm" data-a="s1" data-f="defend" data-p="${k}">Difenditi</button>`}</div>`;}).join("")}</div>`;
 }
 
+/* ================= "Schermo giocatori": shared read-only table screen ================= */
+let VIEW=null,PARTY={},VIEWCODE=null,wakeLock=null;
+async function keepAwake(){try{if(navigator.wakeLock&&!wakeLock){wakeLock=await navigator.wakeLock.request("screen");wakeLock.addEventListener("release",()=>{wakeLock=null;});}}catch(e){}}
+const SCR={
+  async login(){const c=($("#vcode").value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");if(c.length<4)return;
+    VIEW=c;lsSet("4agoo-view",c);role="screen";isNarr=false;landingErr="";mode="loading";render();refetch();},
+  full(){const d=document.documentElement;try{if(document.fullscreenElement)document.exitFullscreen();else if(d.requestFullscreen)d.requestFullscreen();}catch(e){}keepAwake();},
+  async narrCode(){if(!isNarr)return;try{VIEWCODE=await rpc("narr_view_code",{p_token:TOKEN});render();}catch(e){}},
+  copyScreen(){if(!VIEWCODE)return;const u=location.origin+location.pathname+"?schermo="+VIEWCODE;
+    try{navigator.clipboard.writeText(u).then(()=>{busyMsg="Link dello schermo copiato: "+u;render();setTimeout(()=>{busyMsg="";render();},3000);});}catch(e){busyMsg=u;render();}}
+};
+async function refetchScreen(){
+  const d=await rpc("table_get",{p_view:VIEW});if(pending)return;
+  S=merge(freshState(),d.state||{});PARTY=d.party||{};setGame(d.game_id);
+}
+function screenCard(){
+  if(!VIEWCODE)return `<div class="row"><span class="muted">Schermo giocatori:</span><button class="sm" data-a="scr" data-f="narrCode">Mostra il codice</button></div>`;
+  return `<div class="row"><span class="muted">Schermo giocatori:</span><b class="num ok" style="letter-spacing:.12em">${esc(VIEWCODE)}</b><button class="sm" data-a="scr" data-f="copyScreen">Copia link</button></div>`;
+}
+function viewScreen(){
+  const c=S.combat||{};const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);
+  const daysLeft=Math.max(0,40-S.day);const pct=Math.min(100,S.day/40*100);
+  const clues=["c1","c2","c3"].map(k=>S.clues[k]);
+  const party=SLOTS.map(k=>PARTY[k]&&PARTY[k].cls?{k,...PARTY[k]}:null).filter(Boolean);
+  const hel=Object.entries(S.hel).filter(([,h])=>h&&h.name);
+  const as=Object.entries(c.assign||{}).filter(([,a])=>a);const cr=c.cres||{};
+  const visited=Object.entries(S.checks||{}).map(([l,m])=>[l,Object.entries(m||{}).filter(([,v])=>v===true||+v>0).map(([n,v])=>v===true||+v===1?n:`${n}×${v}`)]).filter(([,a])=>a.length);
+  const l=S.last;
+  return `<div class="scr">
+  <section class="scr-top card">
+    <div class="scr-days"><span class="muted">Giorno</span><b class="num">${S.day}</b><span class="muted">/ 40</span></div>
+    <div class="scr-bar"><span style="width:${pct}%"></span></div>
+    <div class="row sb"><span>${S.final?`<b class="ok">Incontro finale in corso</b>`:`${daysLeft} giorni al rituale`}</span><span class="muted">${S.dice==="real"?"dadi reali":"dadi virtuali"}</span></div>
+  </section>
+  <section class="scr-loc card"><span class="muted">Luogo</span><b class="scr-big">${esc(S.loc||"—")}</b></section>
+  <section class="scr-clues card"><span class="muted">Indizi</span><div class="row">${clues.map(v=>`<span class="scr-clue ${v!=null?"on":""}">${v!=null?v:"?"}</span>`).join("")}</div>
+    <span class="muted">PE <b class="num">${S.xp}</b> · minion <b class="num">${S.minions}</b>/10</span></section>
+  <section class="scr-roll card"><span class="muted">Ultimo tiro</span>${l?`<div><span class="scr-big num ok">${esc(l.total)}</span> <b>${esc(l.who||"Narratore")}</b></div><div class="muted">${esc(l.text)}</div>${l.res?`<div class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</div>`:""}`:`<div class="muted">nessuno</div>`}</section>
+  <section class="scr-party card"><h3>Il gruppo</h3><div class="row">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,52)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}</div>
+    ${hel.length?`<div class="row">${hel.map(([,h])=>`<span class="stat">${ico("helper",16)} ${esc(h.name)}${h.life<=0||(h.smax>0&&h.san<=0)?" ✕":""}</span>`).join("")}</div>`:""}</section>
+  <section class="scr-foes card"><h3>Nemici${c.on?` · round ${c.round||1}${c.init?" · iniziativa ai nemici":""}`:""}</h3>
+    ${foes.length?foes.map(([,x])=>`<div class="enemy"><div class="hcard">${foeBadge(x)}<div><b>${esc(x.name)}</b> <span class="muted">L${x.L}${x.inc?" · incorporeo":""}${x.kind==="Boss"?" · boss":""}</span></div></div><div class="scr-big num">${x.n}<span class="muted" style="font-size:14px"> ${x.kind==="Boss"?"Vita":"rimasti"}</span></div></div>`).join(""):`<p class="muted">Nessun nemico in vista.</p>`}
+    ${as.length?`<h3>${c.flee?"Fuga":"Attacchi dei nemici"}</h3>${as.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${esc(a.fname)} → <b>${esc(a.tname)}</b></span><span class="${r&&r.done?(/Schivato/.test(r.res)?"ok":"ko"):"muted"}">${r&&r.done?esc(r.res):"in attesa"}</span></div>`;}).join("")}`:""}</section>
+  <section class="scr-map card"><h3>Mappa</h3>${mapSvg(null)}</section>
+  <section class="scr-done card"><h3>Incontri già usciti</h3>${visited.length?visited.map(([l2,a])=>`<div class="row"><b style="min-width:150px">${esc(l2)}</b>${a.map(n=>`<span class="scr-num">${esc(n)}</span>`).join("")}</div>`).join(""):`<p class="muted">Ancora nessuno.</p>`}</section>
+  </div>`;
+}
+
 function classOptions(sel,slot,source){
   const taken=SLOTS.filter(k=>k!==slot).map(k=>source(k)).filter(Boolean);
   return `<option value="">— vuoto —</option>`+Object.entries(CL).map(([k,c])=>`<option value="${k}" ${sel===k?"selected":""} ${taken.includes(k)?"disabled":""}>${c.n}</option>`).join("");
@@ -944,7 +1012,7 @@ function viewNarrGroup(){
       ${sheet(k,s)}</div>`;}).join("");
   const hel=Object.entries(S.hel).filter(([,h])=>h);
   return `<div class="card"><p>Dai a ogni giocatore il link della pagina e il codice del suo investigatore. I giocatori vedono solo la propria scheda; tu vedi e modifichi tutto.</p>
-    <div class="row"><span class="muted">Dadi:</span><button class="sm ${S.dice!=="real"?"pri":""}" data-a="setDice" data-p="virtual">Virtuali</button><button class="sm ${S.dice==="real"?"pri":""}" data-a="setDice" data-p="real">Reali</button></div>
+    ${screenCard()}<div class="row"><span class="muted">Dadi:</span><button class="sm ${S.dice!=="real"?"pri":""}" data-a="setDice" data-p="virtual">Virtuali</button><button class="sm ${S.dice==="real"?"pri":""}" data-a="setDice" data-p="real">Reali</button></div>
     <p class="muted">Il tuo codice Narratore, per riprendere la partita da un altro dispositivo: <b class="num" style="color:var(--paper)">${esc(TOKEN)}</b> <button class="sm" data-a="copyToken">Copia</button></p></div>
   <div class="grid2">${cards}</div>
   <div class="card"><div class="row sb"><h2>Helper <span class="num muted">${hel.length}/4</span></h2><button data-a="addHelper" ${hel.length>=4?"disabled":""}>Aggiungi helper</button></div>
@@ -1063,6 +1131,7 @@ document.addEventListener("click",e=>{
   const a=t.dataset.a,p=t.dataset.p,d=+t.dataset.d;
   if(a.startsWith("dk")){diceKey(a,p);return;}
   if(diceReq)return;
+  if(a==="scr"){const f=t.dataset.f;if(SCR[f])SCR[f]();return;}
   if(a==="s1"){const f=t.dataset.f,k=t.dataset.k;if(!role||!S1[f])return;
     if(!isNarr){if(!["defend","dropArm","addArmManual"].includes(f))return;
       if(f==="defend"){const as=S.combat&&S.combat.assign&&S.combat.assign[p];if(!as||!MY[as.tgt])return;}
@@ -1119,6 +1188,7 @@ document.addEventListener("keydown",e=>{
   if(id==="pcode"){e.preventDefault();A.playerLogin();}
   if(id==="addcode"){e.preventDefault();A.addCode();}
   if(id==="ntok"){e.preventDefault();A.narrLogin();}
+  if(id==="vcode"){e.preventDefault();SCR.login();}
 });
 
 /* ---------- boot ---------- */
@@ -1133,8 +1203,11 @@ function conn(txt,cls){$("#conn").textContent=txt;$("#conn").className="chip "+(
   try{CODES=JSON.parse(lsGet("4agoo-codes")||"{}")||{};}catch(e){CODES={};}
   const legacy=lsGet("4agoo-code");if(legacy&&!Object.keys(CODES).length)CODES={"?":legacy};
   if(qc){if(!Object.values(CODES).includes(qc))CODES={"?":qc};saveCodes();TOKEN=null;}
-  if(TOKEN){role="narr";isNarr=true;mode="loading";}
+  const qv=(qs.get("schermo")||"").toUpperCase().replace(/[^A-Z0-9]/g,"");VIEW=qv||lsGet("4agoo-view");if(qv){lsSet("4agoo-view",qv);}
+  if(qv&&!qc){role="screen";isNarr=false;mode="loading";}
+  else if(TOKEN){role="narr";isNarr=true;mode="loading";}
   else if(Object.keys(CODES).length){role="player";isNarr=false;mode="loading";tab="pg";}
+  else if(VIEW){role="screen";isNarr=false;mode="loading";}
   conn(role?"connessione…":"pronto","");
   render();if(role)refetch();
   setInterval(()=>{if(role&&document.visibilityState==="visible")refetchSoon(0);},15000);
