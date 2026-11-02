@@ -118,7 +118,7 @@ nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 .toprow h1{display:flex;align-items:center;gap:8px}
 .landing-logo{display:flex;justify-content:center;padding:8px 0}
 .scr{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
-@media (min-width:900px){.scr{grid-template-columns:minmax(0,2fr) minmax(0,3fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:'stage stage' 'left map'}
+@media (min-width:900px){.scr{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);grid-template-areas:'stage stage' 'left map'}
 .scr-stage{grid-area:stage}.scr-left{grid-area:left}.scr-map{grid-area:map}}
 .scr .card{gap:6px}
 .scr-days{display:flex;align-items:baseline;gap:8px}.scr-days b{font-size:64px;line-height:1;color:var(--paper)}
@@ -168,6 +168,15 @@ body.screen-mode{overflow:hidden}
 .scr-checks .loc b{font-size:16px}
 .scr-checks .bx{gap:5px}
 .scr-checks .bx span{width:32px;height:32px;font-size:16px}
+.scr{font-size:20px}.scr .muted{font-size:17px}.scr h3{font-size:24px}
+.scr-days b{font-size:96px}.scr-big{font-size:54px}.scr-roll .scr-big,.scr-cell .scr-big.num{font-size:64px}
+.scr-clue{width:64px;height:64px;font-size:30px}
+.scr-inv{min-width:104px;font-size:19px}
+.scr-checks{gap:10px}.scr-checks .loc{padding:8px}.scr-checks .loc b{font-size:20px}.scr-checks .bx{gap:6px;margin-top:6px}.scr-checks .bx span{width:40px;height:40px;font-size:20px;border-radius:8px}
+.scr-status{grid-template-columns:repeat(4,minmax(0,1fr))}
+.scr-checks{grid-template-columns:repeat(4,minmax(0,1fr))}
+.scr-checks .bx span{width:36px;height:36px;font-size:19px}
+.scr-map svg text{font-size:36px}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -176,7 +185,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.5.4</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.5.5</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -1031,8 +1040,8 @@ function viewScreen(){
         <span class="muted">PE <b class="num">${S.xp}</b> · minion <b class="num">${S.minions}</b>/10</span></div>
       <div class="scr-cell"><span class="muted">Ultimo tiro</span>${l?`<div><span class="scr-big num ok">${esc(l.total)}</span> <b>${esc(l.who||"Narratore")}</b></div><span class="muted">${esc(l.text)}</span>${l.res?`<span class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</span>`:""}`:`<span class="muted">nessuno</span>`}</div>
     </section>
-    <section class="scr-party card"><h3>Il gruppo</h3><div class="scr-partyrow">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,64)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}
-      ${hel.map(([,h])=>`<div class="scr-inv ${h.life<=0||(h.smax>0&&h.san<=0)?"out":""}">${medal("helper",48)}<span>${esc(h.name)}</span><span class="muted">helper</span></div>`).join("")}</div></section>
+    <section class="scr-party card"><h3>Il gruppo</h3><div class="scr-partyrow">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,76)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}
+      ${hel.map(([,h])=>`<div class="scr-inv ${h.life<=0||(h.smax>0&&h.san<=0)?"out":""}">${medal("helper",58)}<span>${esc(h.name)}</span><span class="muted">helper</span></div>`).join("")}</div></section>
     <section class="scr-done card"><h3>Incontri già usciti</h3><div class="checks scr-checks">${CHECKLOCS.map(l2=>`<div class="loc"><b>${esc(l2)}</b><div class="bx">${[1,2,3,4,5,6].map(i=>`<span class="${usedOf(l2,i)>0?"on":""}">${i}</span>`).join("")}</div></div>`).join("")}</div></section>
   </div>
   <section class="scr-map card"><div class="row sb"><h3>Mappa</h3>${mapLegend()}</div>${mapSvg(null)}</section>
