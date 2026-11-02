@@ -186,7 +186,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.6.2</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.6.3</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -237,7 +237,7 @@ const AIR = ["Boston","New York","Chicago","San Francisco","Los Angeles"];
 const LOCS = Object.keys(POS);
 const CHECKLOCS = LOCS.filter(l=>l!=="Dunwich");
 const STARTS = ["New York","Providence","Boston","Salem","Arkham","Chicago"];
-const ACTS = [["Indagare",1],["Riposare",1],["Equipaggiarsi",1],["Reclutare helper",1],["Reclutare investigatore",2]];
+const ACTS = [["Indagare",1],["Riposare",1],["Equipaggiarsi",1],["Reclutare aiutanti",1],["Reclutare investigatore",2]];
 
 
 /* ---------- helpers ---------- */
@@ -560,7 +560,7 @@ const A={
   async levelUp(slot){const s=invOf(slot);if(S.xp<1)return;let r;try{r=await getD6(`${CL[s.cls].n}: salire di livello (serve più di ${s.lvl})`);}catch(e){return;}const nm=CL[s.cls].n;
     if(r>s.lvl){invUpd(slot,{lvl:s.lvl+1,life:s.life+1});upd({xp:S.xp-1,last:{who:nm,text:"Salire di livello",total:r,res:`Riuscito: L${s.lvl+1}`,ok:true,dice:[r],ts:Date.now()}});addLog(`${nm} tenta di salire di livello: ${r}, ci riesce.`,nm);}
     else{upd({xp:S.xp-1,last:{who:nm,text:"Salire di livello",total:r,res:"Fallito, PE perso",ok:false,dice:[r],ts:Date.now()}});addLog(`${nm} tenta di salire di livello: ${r}, fallisce.`,nm);}},
-  addHelper(){const n=Object.values(S.hel).filter(Boolean).length;if(n>=4)return;upd({hel:{["h"+uid()]:{name:"Helper",life:1,lmax:1,san:1,smax:1,note:""}}});},
+  addHelper(){const n=Object.values(S.hel).filter(Boolean).length;if(n>=4)return;upd({hel:{["h"+uid()]:{name:"Aiutante",life:1,lmax:1,san:1,smax:1,note:""}}});},
   helStat(k,f,d){const h=S.hel[k];const mx=f==="life"?h.lmax:h.smax;const v=Math.min(mx,h[f]+d);upd({hel:{[k]:{[f]:v}}});if(v<=0&&h[f]>0)addLog(`${h.name} è fuori gioco.`);},
   delHelper(k){const h=S.hel[k];upd({hel:{[k]:null}});addLog(`${h.name} lascia il gruppo.`);},
   day(d){if(S.final)return;const v=Math.max(0,S.day+d);upd({day:v});addLog(`Giorno ${v} di 40.`);},
@@ -771,7 +771,7 @@ const S1={
     if(recUsed(S.loc,id)>=(+e.boxes||1)){alertBox("Questa recluta è esaurita.");return;}
     if(e.kind==="hel"){
       const n=Math.max(+e.min||1,Math.min(+e.max||1,+($("#rc-"+id)||{}).value||+e.min||1));
-      if(helpers().length+n>4){alertBox(`Avete già ${helpers().length} helper: il massimo è 4. Congedane qualcuno prima di reclutare.`);return;}
+      if(helpers().length+n>4){alertBox(`Avete già ${helpers().length} aiutanti: il massimo è 4. Congedane qualcuno prima di reclutare.`);return;}
       const hel={};for(let i=0;i<n;i++)hel["h"+uid()]={name:e.name+(n>1?` ${i+1}`:""),life:+e.life||1,lmax:+e.life||1,san:+e.san||0,smax:+e.san||0,atk:+e.atk||0,note:e.note||""};
       const days=+e.days||1;upd({day:S.day+days,hel,recUsed:{[S.loc]:{[id]:recUsed(S.loc,id)+1}}});
       addLog(`Reclutati: ${n} × ${e.name} a ${S.loc} (+${days} ${days>1?"giorni":"giorno"}). Giorno ${S.day}.`);
@@ -791,7 +791,7 @@ const S1={
   student(){
     const p=SLOTS.find(k=>{const s=invOf(k);return s&&s.cls==="professore"&&alive(s)&&(s.used.studente||0)<s.lvl;});
     if(!p||!STUDENT_CITIES.includes(S.loc))return;
-    if(helpers().length>=4){alertBox("Avete già 4 helper.");return;}
+    if(helpers().length>=4){alertBox("Avete già 4 aiutanti.");return;}
     invUpd(p,{used:{studente:(invOf(p).used.studente||0)+1}});
     upd({hel:{["h"+uid()]:{name:"Studente",life:1,lmax:1,san:2,smax:2,atk:0,note:"+1 ai test di Conoscenza (non cumulabile tra studenti)"}}});
     addLog("Il Professore recluta uno studente (azione gratuita).");
@@ -899,7 +899,7 @@ function bossCard(L){const B=L.boss;if(!B)return "";const r=bossCalc(B);
     ${(B.conds||[]).length?`<div class="bosslist">${B.conds.map(c=>{const on=bossCondOn(c);const lab=c.label||(CL[c.cls]?CL[c.cls].n+" nel gruppo":"");const val=`${c.mod>0?"+":""}${c.mod} ${c.target==="life"?"Vita":"Liv."}`;
       return c.kind==="cls"?`<div class="row sb"><span class="hcard">${CL[c.cls]?ico(c.cls,18):""}${esc(lab)} <span class="muted">(automatico)</span></span><span class="${on?"ok":"muted"}">${on?"sì":"no"} → ${on?val:"0"}</span></div>`
         :`<div class="row sb"><label style="flex-direction:row;align-items:center;gap:8px;font-size:15px;color:var(--paper)" for="bc-${c.id}"><input id="bc-${c.id}" type="checkbox" style="width:auto;min-height:0" data-a="s1" data-f="bossTick" data-p="${c.id}" ${on?"checked":""}> ${esc(lab)}</label><span class="${on?"ok":"muted"}">${on?val:"0"}</span></div>`;}).join("")}</div>`:`<p class="muted">Nessuna condizione inserita.</p>`}
-    <div class="row"><span class="muted">${B.atk>1?`${B.atk} attacchi per round · `:""}${B.dmg>1?`${B.dmg} ferite per colpo · `:""}${B.inc?"incorporeo · ":""}${B.hel?"gli helper partecipano · ":""}${+B.days?`${B.days} ${B.days>1?"giorni":"giorno"} per tentativo`:""}</span></div>
+    <div class="row"><span class="muted">${B.atk>1?`${B.atk} attacchi per round · `:""}${B.dmg>1?`${B.dmg} ferite per colpo · `:""}${B.inc?"incorporeo · ":""}${B.hel?"gli aiutanti partecipano · ":""}${+B.days?`${B.days} ${B.days>1?"giorni":"giorno"} per tentativo`:""}</span></div>
     <div class="row"><button class="pri" data-a="s1" data-f="bossFight" ${S.combat&&S.combat.on?"disabled":""}>Affronta ${esc(B.name||"il boss")}</button></div></div>`;}
 
 /* ================= views ================= */
@@ -917,7 +917,7 @@ function viewLocation(){
     ${L.note?`<p class="muted">Bonus del luogo: ${esc(L.note)}</p>`:""}</div>
   <div class="card"><h3>Indagare <span class="muted">(1 giorno)</span></h3>
     <div class="row">${boxes.join("")}</div>
-    ${hel.length?`<div class="row"><span class="muted">Helper che partecipano:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]?"pri":""}" data-a="s1" data-f="helperToggle" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
+    ${hel.length?`<div class="row"><span class="muted">Aiutanti che partecipano:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]?"pri":""}" data-a="s1" data-f="helperToggle" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
     <div class="row"><label for="invmod" style="flex-direction:row;align-items:center;gap:6px">Modificatore <input id="invmod" type="number" value="${invMod}" data-s1v="invMod" style="width:80px"></label>
       ${tm?`<span class="chip me">domani ${tm>0?"+":""}${tm}</span>`:""}</div>
     <div class="row"><button class="pri" data-a="s1" data-f="investigate" ${S.final?"disabled":""}>Indaga</button></div>
@@ -932,7 +932,7 @@ function viewLocation(){
         ${r.kind==="inv"&&spy?`<label style="flex-direction:row;align-items:center;gap:4px" for="spy-${r.id}"><input id="spy-${r.id}" type="checkbox" style="width:auto;min-height:0">Spia (1 g)</label>`:""}
         <button class="sm" data-a="s1" data-f="recruit" data-p="${r.id}" ${left<=0||S.final?"disabled":""}>Recluta</button></div></div>`;}).join(""):`<p class="muted">Nessuna recluta inserita per questo luogo.</p>`}
     ${prof&&STUDENT_CITIES.includes(S.loc)?`<div class="row"><button class="sm" data-a="s1" data-f="student">Studente gratuito del Professore</button></div>`:""}
-    <p class="muted">Helper: massimo 4. Investigatori: massimo 4, ognuno una volta sola.</p>
+    <p class="muted">Aiutanti: massimo 4. Investigatori: massimo 4, ognuno una volta sola.</p>
   </div>
   <div class="card"><h3>Equipaggiarsi <span class="muted">(1 giorno)</span></h3>
     ${equipOpen?viewEquip(L):`<p class="muted">${L.arms.length?L.arms.map(a=>`${esc(a.name)} (${CAT[a.cat]})${a.cond?" — "+esc(a.cond):""}`).join(" · "):"Nessuna arma inserita."}</p><div class="row"><button data-a="s1" data-f="equip" ${S.final||!L.arms.length?"disabled":""}>Equipaggiati</button></div>`}
@@ -975,7 +975,7 @@ function viewLocEdit(){
         <label for="le-r${i}b">Caselle<input id="le-r${i}b" type="number" min="1" data-le="rec.${i}.boxes" value="${r.boxes}"></label></div>
         <div class="row"><button class="sm danger" data-a="s1" data-f="delRec" data-p="${i}">Togli</button></div></div>`
       :`<div class="card" style="background:#1a1624"><div class="f">
-        <label for="le-r${i}n">Helper<input id="le-r${i}n" data-le="rec.${i}.name" value="${esc(r.name)}"></label>
+        <label for="le-r${i}n">Aiutante<input id="le-r${i}n" data-le="rec.${i}.name" value="${esc(r.name)}"></label>
         <label for="le-r${i}mi">Quanti da<input id="le-r${i}mi" type="number" min="1" data-le="rec.${i}.min" value="${r.min}"></label>
         <label for="le-r${i}ma">a<input id="le-r${i}ma" type="number" min="1" data-le="rec.${i}.max" value="${r.max}"></label>
         <label for="le-r${i}l">Vita<input id="le-r${i}l" type="number" data-le="rec.${i}.life" value="${r.life}"></label>
@@ -985,7 +985,7 @@ function viewLocEdit(){
         <label for="le-r${i}b">Caselle<input id="le-r${i}b" type="number" min="1" data-le="rec.${i}.boxes" value="${r.boxes}"></label></div>
         <label for="le-r${i}t">Abilità (nota)<input id="le-r${i}t" data-le="rec.${i}.note" value="${esc(r.note)}"></label>
         <div class="row"><button class="sm danger" data-a="s1" data-f="delRec" data-p="${i}">Togli</button></div></div>`).join("")}
-    <div class="row"><button class="sm" data-a="s1" data-f="addRec" data-p="hel">+ Helper</button><button class="sm" data-a="s1" data-f="addRec" data-p="inv">+ Investigatore</button></div>
+    <div class="row"><button class="sm" data-a="s1" data-f="addRec" data-p="hel">+ Aiutante</button><button class="sm" data-a="s1" data-f="addRec" data-p="inv">+ Investigatore</button></div>
     <h3>Armi in vendita</h3>
     ${e.arms.map((a,i)=>`<div class="row"><input id="le-a${i}n" aria-label="Nome arma" placeholder="Nome" data-le="arms.${i}.name" value="${esc(a.name)}" style="flex:2">
       <select id="le-a${i}c" aria-label="Categoria" data-le="arms.${i}.cat" style="flex:1">${opt(a.cat,Object.entries(CAT))}</select>
@@ -1001,7 +1001,7 @@ function viewLocEdit(){
       <label for="le-bd">Ferite per colpo<input id="le-bd" type="number" min="1" data-le="boss.dmg" value="${b.dmg}"></label>
       <label for="le-bg">Giorni per tentativo<input id="le-bg" type="number" min="0" data-le="boss.days" value="${b.days}"></label>
       <label for="le-bi">Incorporeo<select id="le-bi" data-le="boss.inc">${opt(String(!!b.inc),[["false","no"],["true","sì"]])}</select></label>
-      <label for="le-bh">Gli helper combattono<select id="le-bh" data-le="boss.hel">${opt(String(!!b.hel),[["false","no"],["true","sì"]])}</select></label></div>
+      <label for="le-bh">Gli aiutanti combattono<select id="le-bh" data-le="boss.hel">${opt(String(!!b.hel),[["false","no"],["true","sì"]])}</select></label></div>
       <label for="le-bt">Note (fuga, regole speciali)<input id="le-bt" data-le="boss.note" value="${esc(b.note)}"></label>
       <h3>Condizioni</h3>
       ${b.conds.map((c,i)=>`<div class="row" style="align-items:flex-end">
@@ -1026,7 +1026,7 @@ function combatGuide(){
   const as=Object.entries(c.assign||{}).filter(([,a])=>a);const cr=c.cres||{};const done=as.length&&as.every(([k])=>cr[k]&&cr[k].done);
   return `<div class="card"><div class="row sb"><h2>Round ${c.round||1}</h2><button class="sm ${c.init?"pri":""}" data-a="s1" data-f="toggleInit">${c.init?"Nemici con l'iniziativa":"Iniziativa al gruppo"}</button></div>
     <p class="muted">${c.init?"Prima la difesa, poi l'attacco.":"Prima l'attacco (ognuno dalla scheda Dadi, scegliendo il bersaglio), poi la difesa."}</p>
-    ${hel.length?`<div class="row"><span class="muted">Helper in combattimento:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]!==false?"pri":""}" data-a="s1" data-f="toggleHel" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
+    ${hel.length?`<div class="row"><span class="muted">Aiutanti in combattimento:</span>${hel.map(([k,h])=>`<button class="sm ${sel[k]!==false?"pri":""}" data-a="s1" data-f="toggleHel" data-p="${k}">${esc(h.name)}</button>`).join("")}</div>`:""}
     ${as.length?`<h3>${c.flee?"Fuga: ultimo attacco dei nemici":"Difesa"}</h3>${as.map(([k,a])=>{const r=cr[k];const fx=S.foes[a.fid]||{kind:a.boss?"Boss":"Minion"};const ti=SLOTS.includes(a.tgt)&&invOf(a.tgt)?ico(invOf(a.tgt).cls,18):ico("helper",18);return `<div class="row sb"><span class="hcard">${ti}<b>${esc(a.tname)}</b> ← ${foeBadge(fx)} ${esc(a.fname)} L${a.L}${a.dmg>1?` (${a.dmg} ferite)`:""}</span>${r&&r.done?`<span class="${/Schivato/.test(r.res)?"ok":"ko"}">${esc(r.res)}</span>`:`<button class="sm" data-a="s1" data-f="defend" data-p="${k}">Difendi</button>`}</div>`;}).join("")}`:""}
     <div class="row">${!as.length?`<button data-a="s1" data-f="assign">Fase di difesa: assegna gli attacchi</button>`:""}
       ${done&&!c.flee?`<button class="pri" data-a="s1" data-f="nextRound">Round successivo</button>`:""}
@@ -1117,7 +1117,7 @@ function viewScreen(){
       <div class="scr-cell"><span class="muted">Ultimo tiro</span>${l?`<div><span class="scr-big num ok">${esc(l.total)}</span> <b>${esc(l.who||"Narratore")}</b></div><span class="muted">${esc(l.text)}</span>${l.res?`<span class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</span>`:""}`:`<span class="muted">nessuno</span>`}</div>
     </section>
     <section class="scr-party card"><h3>Il gruppo</h3><div class="scr-partyrow">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,76)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}
-      ${hel.map(([,h])=>`<div class="scr-inv ${h.life<=0||(h.smax>0&&h.san<=0)?"out":""}">${medal("helper",58)}<span>${esc(h.name)}</span><span class="muted">helper</span></div>`).join("")}</div></section>
+      ${hel.map(([,h])=>`<div class="scr-inv ${h.life<=0||(h.smax>0&&h.san<=0)?"out":""}">${medal("helper",58)}<span>${esc(h.name)}</span><span class="muted">aiutante</span></div>`).join("")}</div></section>
     <section class="scr-done card"><h3>Incontri già usciti</h3><div class="checks scr-checks">${CHECKLOCS.map(l2=>`<div class="loc"><b>${esc(l2)}</b><div class="bx">${[1,2,3,4,5,6].map(i=>`<span class="${usedOf(l2,i)>0?"on":""}">${i}</span>`).join("")}</div></div>`).join("")}</div></section>
   </div>
   <section class="scr-map card"><div class="row sb"><h3>Mappa</h3>${mapLegend()}</div>${mapSvg(null)}</section>
@@ -1192,15 +1192,15 @@ function viewNarrGroup(){
     ${screenCard()}<div class="row"><span class="muted">Dadi:</span><button class="sm ${S.dice!=="real"?"pri":""}" data-a="setDice" data-p="virtual">Virtuali</button><button class="sm ${S.dice==="real"?"pri":""}" data-a="setDice" data-p="real">Reali</button></div>
     <p class="muted">Il tuo codice Narratore, per riprendere la partita da un altro dispositivo: <b class="num" style="color:var(--paper)">${esc(TOKEN)}</b> <button class="sm" data-a="copyToken">Copia</button></p></div>
   <div class="grid2">${cards}</div>
-  <div class="card"><div class="row sb"><h2>Helper <span class="num muted">${hel.length}/4</span></h2><button data-a="addHelper" ${hel.length>=4?"disabled":""}>Aggiungi helper</button></div>
+  <div class="card"><div class="row sb"><h2>Aiutanti <span class="num muted">${hel.length}/4</span></h2><button data-a="addHelper" ${hel.length>=4?"disabled":""}>Aggiungi aiutante</button></div>
     ${hel.length?hel.map(([k,h])=>`<div class="card" style="background:#1a1624">
       <div class="hcard">${medal("helper",30)}<b>${esc(h.name)}</b></div>
       <div class="f"><label for="hn-${k}">Nome<input id="hn-${k}" data-htx="name" data-p="${k}" value="${esc(h.name)}"></label>
       <label for="hl-${k}">Vita max<input id="hl-${k}" type="number" min="1" data-hnum="lmax" data-p="${k}" value="${h.lmax}"></label>
       <label for="hs-${k}">Sanità max<input id="hs-${k}" type="number" min="0" data-hnum="smax" data-p="${k}" value="${h.smax}"></label></div>
       ${meter("Vita","l",h.life,h.lmax,"helStat",k)}${meter("Sanità","s",h.san,h.smax,"helStat",k)}
-      <div class="row"><input id="hnote-${k}" aria-label="Note helper" placeholder="abilità, bonus" data-htx="note" data-p="${k}" value="${esc(h.note)}" style="flex:1"><button class="sm danger" data-a="delHelper" data-p="${k}">Congeda</button></div>
-    </div>`).join(""):`<p class="muted">Nessun helper. Gli helper sono visibili a tutti nella scheda Tavolo.</p>`}
+      <div class="row"><input id="hnote-${k}" aria-label="Note aiutante" placeholder="abilità, bonus" data-htx="note" data-p="${k}" value="${esc(h.note)}" style="flex:1"><button class="sm danger" data-a="delHelper" data-p="${k}">Congeda</button></div>
+    </div>`).join(""):`<p class="muted">Nessun aiutante. Gli aiutanti sono visibili a tutti nella scheda Tavolo.</p>`}
   </div>
   ${cluesCard(true)}`;
 }
@@ -1220,7 +1220,7 @@ function viewMine(){
 function viewTable(){
   const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);const hel=Object.entries(S.hel).filter(([,h])=>h);
   return `<div class="card"><h2>Nemici in campo${S.combat&&S.combat.on?` · round ${S.combat.round||1}`:""}</h2>${foes.length?foes.map(([,x])=>`<div class="enemy"><div class="hcard">${foeBadge(x)}<div><b>${esc(x.name)}</b> <span class="muted">L${x.L} · ${kindIt(x.kind)}${x.inc?" · incorporeo":""}</span></div></div><div class="num">${x.n}${x.kind==="Boss"?" Vita":" rimasti"}</div></div>`).join(""):`<p class="muted">Nessun nemico.</p>`}</div>
-  <div class="card"><h2>Helper del gruppo</h2>${hel.length?hel.map(([,h])=>`<div class="row sb"><span class="hcard">${ico("helper",18)}<b>${esc(h.name)}</b> <span class="muted">${esc(h.note)}</span></span><span class="num">Vita ${h.life}/${h.lmax} · San ${h.san}/${h.smax}</span></div>`).join(""):`<p class="muted">Nessun helper.</p>`}</div>
+  <div class="card"><h2>Aiutanti del gruppo</h2>${hel.length?hel.map(([,h])=>`<div class="row sb"><span class="hcard">${ico("helper",18)}<b>${esc(h.name)}</b> <span class="muted">${esc(h.note)}</span></span><span class="num">Vita ${h.life}/${h.lmax} · San ${h.san}/${h.smax}</span></div>`).join(""):`<p class="muted">Nessun aiutante.</p>`}</div>
   ${cluesCard(false)}
   <div class="card"><div class="row sb"><h2>Mappa</h2>${mapLegend()}</div>${mapSvg(null)}</div>`;
 }
