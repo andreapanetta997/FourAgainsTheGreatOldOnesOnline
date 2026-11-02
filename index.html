@@ -117,10 +117,10 @@ nav.tabs button .ico{margin-right:4px;width:16px;height:16px}
 @media (prefers-reduced-motion:no-preference){.toss{animation:toss .9s ease-out}@keyframes toss{0%{transform:translateY(-60px) scale(.7)}55%{transform:translateY(8px) scale(1.04)}75%{transform:translateY(-6px)}100%{transform:none}}}
 .toprow h1{display:flex;align-items:center;gap:8px}
 .landing-logo{display:flex;justify-content:center;padding:8px 0}
-.scr{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));grid-auto-flow:dense}
+.scr{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.scr{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:'stage stage stage' 'days loc map' 'clues roll map' 'party party map' 'done done map'}
+.scr-stage{grid-area:stage}.scr-top{grid-area:days}.scr-loc{grid-area:loc}.scr-clues{grid-area:clues}.scr-roll{grid-area:roll}.scr-party{grid-area:party}.scr-map{grid-area:map}.scr-done{grid-area:done}}
 .scr .card{gap:6px}
-.scr-map{grid-row:span 2}
-@media (min-width:1100px){.scr-map{grid-column:span 2}}
 .scr-days{display:flex;align-items:baseline;gap:8px}.scr-days b{font-size:64px;line-height:1;color:var(--paper)}
 .scr-bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden}.scr-bar span{display:block;height:100%;background:var(--blood)}
 .scr-big{font-family:var(--display);font-size:34px;line-height:1.1}
@@ -141,9 +141,16 @@ body.screen-mode main{max-width:none}
 .scr-foe .scr-bar{width:100%}
 .scr-atk{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .scr-atk-col{border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:2px;font-size:14px}
-.scr-doneline{display:flex;align-items:center;gap:10px;white-space:nowrap;overflow-x:auto;padding:2px 0}.scr-doneline b{min-width:130px}
+.scr-doneline{display:flex;align-items:center;gap:10px;white-space:nowrap;padding:2px 0}.scr-doneline b{min-width:140px}
+.scr-done{min-width:0}
+.scr-map svg{max-height:calc(100vh - 130px)}
 .scr-nums{display:flex;gap:6px}
 @media (prefers-reduced-motion:no-preference){.scr-foe svg{animation:loom 4s ease-in-out infinite}@keyframes loom{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}}
+body.screen-mode{overflow:hidden}
+.scr{font-size:18px}.scr .muted{font-size:15px}.scr h3{font-size:22px}
+.scr-days b{font-size:84px}.scr-big{font-size:46px}.scr-clue{width:56px;height:56px;font-size:26px}
+.scr-doneline b{font-size:17px}.scr-num{min-width:36px;height:36px;font-size:18px}
+.scr-roll .scr-big{font-size:56px}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -152,7 +159,7 @@ body.screen-mode main{max-width:none}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.2</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.2.2</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -590,6 +597,7 @@ function render(){
   $("#main").innerHTML=(busyMsg?`<p class="banner">${esc(busyMsg)}</p>`:"")+html;
   renderDice();watchLast();
   $("#modal").innerHTML=modal?`<div class="modal" role="dialog" aria-modal="true"><div class="card"><h3>${esc(modal.title)}</h3><p>${esc(modal.text)}</p><div class="row"><button class="danger" data-a="modalOk">${esc(modal.ok)}</button><button data-a="modalNo">Annulla</button></div></div></div>`:"";
+  fitScreen();
   if(keep){const el=document.getElementById(keep.id);if(el){el.value=keep.v;el.focus();try{el.setSelectionRange(keep.s,keep.e);}catch(e){}}}
 }
 function renderHeader(){
@@ -1011,6 +1019,17 @@ function viewScreen(){
   <section class="scr-done card"><h3>Incontri già usciti</h3>${visited.length?visited.map(([l2,a])=>`<div class="scr-doneline"><b>${esc(l2)}</b><span class="scr-nums">${a.map(n=>`<span class="scr-num">${esc(n)}</span>`).join("")}</span></div>`).join(""):`<p class="muted">Ancora nessuno.</p>`}</section>
   </div>`;
 }
+
+// the table screen is never touched: shrink the whole view so it always fits the display, no scrolling
+function fitScreen(){
+  const m=$("#main");if(!m)return;
+  if(role!=="screen"){m.style.transform="";m.style.width="";m.style.maxWidth="";return;}
+  const head=document.querySelector("header.top");const avail=window.innerHeight-(head?head.offsetHeight:0)-6;const W=document.documentElement.clientWidth;
+  let z=1;m.style.transformOrigin="top left";m.style.maxWidth="none";m.style.transform="";m.style.width=W+"px";
+  // lay out at a wider size, then scale down to the display: a few passes because width changes height
+  for(let i=0;i<5;i++){const h=m.scrollHeight*z;if(h<=avail+1)break;z=Math.max(.3,z*avail/h);m.style.width=(W/z)+"px";m.style.transform=`scale(${z})`;}
+}
+window.addEventListener("resize",()=>{if(role==="screen")fitScreen();});
 
 function classOptions(sel,slot,source){
   const taken=SLOTS.filter(k=>k!==slot).map(k=>source(k)).filter(Boolean);
