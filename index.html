@@ -158,7 +158,7 @@ body.screen-mode{overflow:hidden}
 .scr-donewrap{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
 .scr-donechip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.scr-donechip b{margin-right:2px}
 .scr-map{display:flex;flex-direction:column;min-height:0}
-.scr-map svg.map{flex:1 1 0;width:100%;height:auto;min-height:0}
+.scr-map svg.map{flex:1 1 0;width:100%;height:100%;min-height:0;overflow:hidden}
 @media (min-width:900px){.scr{height:100%}.scr-left{min-height:0}}
 .maplegend{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:14px}.maplegend svg{color:var(--paper)}
 .scr .maplegend{font-size:18px}.scr .maplegend svg{width:22px;height:22px}
@@ -179,6 +179,11 @@ body.screen-mode{overflow:hidden}
 .scr-map svg text{font-size:36px}
 .bosslist{display:flex;flex-direction:column;gap:4px;font-size:15px}
 
+.scr-bonus{display:block;color:#e8c46a;font-size:21px !important;line-height:1.25;margin-top:2px}
+.scr-bonus.rest{color:#b9a8e6}
+.scr-locnote{color:#e8c46a;font-size:17px !important;line-height:1.2;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.scr-checks .loc.here{outline:2px solid #a78bfa}
+
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
 </style>
@@ -186,7 +191,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.7.2</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.8.0</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -1112,12 +1117,15 @@ const SCR={
 };
 async function refetchScreen(){
   const d=await rpc("table_get",{p_view:VIEW});if(pending)return;
-  S=merge(freshState(),d.state||{});PARTY=d.party||{};setGame(d.game_id);
+  S=merge(freshState(),d.state||{});PARTY=d.party||{};LOCINFO=d.locinfo||{};setGame(d.game_id);
 }
 function screenCard(){
   if(!VIEWCODE)return `<div class="row"><span class="muted">Schermo giocatori:</span><button class="sm" data-a="scr" data-f="narrCode">Mostra il codice</button></div>`;
   return `<div class="row"><span class="muted">Schermo giocatori:</span><b class="num ok" style="letter-spacing:.12em">${esc(VIEWCODE)}</b><button class="sm" data-a="scr" data-f="copyScreen">Copia link</button></div>`;
 }
+let LOCINFO={};
+function locNote(l){const i=role==="screen"?LOCINFO[l]:locData(l);return i&&i.note?String(i.note).trim():"";}
+function locRest(l){const i=role==="screen"?LOCINFO[l]:locData(l);return i&&i.rest?String(i.rest).trim():"";}
 function viewScreen(){
   const c=S.combat||{};const foes=Object.entries(S.foes).filter(([,x])=>x&&x.name&&x.n>0);
   const daysLeft=Math.max(0,40-S.day);const pct=Math.min(100,S.day/40*100);
@@ -1142,14 +1150,14 @@ function viewScreen(){
     <section class="scr-status card">
       <div class="scr-cell"><span class="muted">Giorno</span><div class="scr-days"><b class="num">${S.day}</b><span class="muted">/ 40</span></div>
         <div class="scr-bar"><span style="width:${pct}%"></span></div><span>${S.final?`<b class="ok">Incontro finale in corso</b>`:`${daysLeft} giorni al rituale`}</span></div>
-      <div class="scr-cell"><span class="muted">Luogo</span><b class="scr-big">${esc(S.loc||"—")}</b><span class="muted">${S.dice==="real"?"dadi reali":"dadi virtuali"}</span></div>
+      <div class="scr-cell"><span class="muted">Luogo</span><b class="scr-big">${esc(S.loc||"—")}</b>${(()=>{const o=[];const n1=locNote(S.loc);if(n1)o.push(`<span class="scr-bonus">${SUBINV[S.loc]?"Investigare: ":""}${esc(n1)}</span>`);const sk=SUBINV[S.loc];const n2=sk?locNote(sk):"";if(n2)o.push(`<span class="scr-bonus">${esc(SUBLBL[S.loc].replace(/^./,c=>c.toUpperCase()))}: ${esc(n2)}</span>`);const r=locRest(S.loc);if(r)o.push(`<span class="scr-bonus rest">Riposo: ${esc(r)}</span>`);return o.join("");})()}<span class="muted">${S.dice==="real"?"dadi reali":"dadi virtuali"}</span></div>
       <div class="scr-cell"><span class="muted">Indizi</span><div class="row">${clues.map(v=>`<span class="scr-clue ${v!=null?"on":""}">${v!=null?v:"?"}</span>`).join("")}</div>
         <span class="muted">PE <b class="num">${S.xp}</b> · seguaci <b class="num">${S.minions}</b>/10</span></div>
       <div class="scr-cell"><span class="muted">Ultimo tiro</span>${l?`<div><span class="scr-big num ok">${esc(l.total)}</span> <b>${esc(l.who||"Narratore")}</b></div><span class="muted">${esc(l.text)}</span>${l.res?`<span class="${l.ok===true?"ok":l.ok===false?"ko":""}">${esc(l.res)}</span>`:""}`:`<span class="muted">nessuno</span>`}</div>
     </section>
     <section class="scr-party card"><h3>Il gruppo</h3><div class="scr-partyrow">${party.map(p=>`<div class="scr-inv ${p.out?"out":""}">${medal(p.cls,76)}<span>${CL[p.cls].n}</span><span class="muted num">L${p.lvl||1}</span>${p.out?`<span class="chip dead">fuori gioco</span>`:""}</div>`).join("")}
       ${hel.map(([,h])=>`<div class="scr-inv ${h.life<=0||(h.smax>0&&h.san<=0)?"out":""}">${medal("helper",58)}<span>${esc(h.name)}</span><span class="muted">aiutante</span></div>`).join("")}</div></section>
-    <section class="scr-done card"><h3>Incontri già usciti</h3><div class="checks scr-checks">${CHECKLOCS.map(l2=>`<div class="loc"><b>${esc(l2)}</b><div class="bx">${[1,2,3,4,5,6].map(i=>`<span class="${usedOf(l2,i)>0?"on":""}">${i}</span>`).join("")}</div></div>`).join("")}</div></section>
+    <section class="scr-done card"><h3>Incontri già usciti</h3><div class="checks scr-checks">${CHECKLOCS.map(l2=>`<div class="loc ${l2===S.loc||SUBINV[S.loc]===l2?"here":""}"><b>${esc(l2)}</b><div class="bx">${[1,2,3,4,5,6].map(i=>`<span class="${usedOf(l2,i)>0?"on":""}">${i}</span>`).join("")}</div>${locNote(l2)?`<div class="scr-locnote" title="${esc(locNote(l2))}">${esc(locNote(l2))}</div>`:""}</div>`).join("")}</div></section>
   </div>
   <section class="scr-map card"><div class="row sb"><h3>Mappa</h3>${mapLegend()}</div>${mapSvg(null)}</section>
   </div>`;
@@ -1166,8 +1174,11 @@ function fitScreen(){
   g.style.height=wide?avail+"px":"";
   if(!wide)return;
   // the grid fills the display exactly; if the left column still overflows, lay out taller and scale down
-  for(let i=0;i<5;i++){const need=Math.max(g.scrollHeight,...[...g.children].map(ch=>ch.offsetTop+ch.scrollHeight));const h=need*z;
-    if(h<=avail+1)break;z=Math.max(.3,z*avail/h);m.style.width=(W/z)+"px";g.style.height=(avail/z)+"px";m.style.transform=`scale(${z})`;}
+  const apply=zz=>{m.style.width=(W/zz)+"px";g.style.height=(avail/zz)+"px";m.style.transform=zz===1?"":`scale(${zz})`;};
+  const need=()=>Math.max(g.scrollHeight,...[...g.children].map(ch=>ch.offsetTop-g.offsetTop+ch.scrollHeight));
+  for(let i=0;i<5;i++){const h=need()*z;if(h<=avail+1)break;z=Math.max(.3,z*avail/h);apply(z);}
+  // then grow back in small steps while everything still fits
+  for(let i=0;i<15&&z<1;i++){const z2=Math.min(1,z*1.02);apply(z2);if(need()*z2<=avail+1)z=z2;else{apply(z);break;}}
 }
 window.addEventListener("resize",()=>{if(role==="screen")fitScreen();});
 

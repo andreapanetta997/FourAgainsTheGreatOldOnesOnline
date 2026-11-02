@@ -219,3 +219,7 @@ alter table public.chars add column if not exists owner text;
 alter table public.games add column if not exists view_code text unique;
 -- narr_view_code(p_token): read-only code for the "Schermo giocatori" (created on first request).
 -- table_get(p_view): public state plus, per investigator, only class, level and whether it is out of play.
+
+-- ===== screen location info (migration "tavolo_screen_locinfo") =====
+-- table_get now also returns 'locinfo': {location: {note, rest}} taken from the narrator's library,
+-- so the players' screen can show each location's roll bonus and rest note.
