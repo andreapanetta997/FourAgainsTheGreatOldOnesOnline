@@ -185,6 +185,18 @@ body.screen-mode{overflow:hidden}
 .scr-checks .loc.here{outline:2px solid #a78bfa}
 
 .foe-photo{display:block;aspect-ratio:4/5;object-fit:cover;object-position:50% 22%;border-radius:8px;max-width:100%;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 6px 18px rgba(0,0,0,.5)}
+.foe-photo.wide{aspect-ratio:16/9;object-position:50% 40%}
+
+.scr-fight{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-bottom:8px}.scr-fight .scr-foes-row{flex:1 1 300px;align-content:flex-start}
+.scr-boss{display:grid;grid-template-columns:auto minmax(260px,auto);gap:22px;align-items:center;padding:14px;flex:0 1 auto;border:1px solid #f09595;border-radius:12px;background:linear-gradient(90deg,rgba(60,10,20,.45),rgba(10,8,16,.35))}
+.scr-boss-img{display:block;height:330px;aspect-ratio:4/5;object-fit:cover;object-position:50% 22%;border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 10px 30px rgba(0,0,0,.6)}
+.scr-boss.wide .scr-boss-img{aspect-ratio:16/9;object-position:50% 40%}
+.scr-boss-info{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.scr-boss-name{font-family:var(--display);font-size:46px;line-height:1.05}
+.scr-boss-lvl{font-size:24px}.scr-boss-lvl b{font-size:34px}
+.scr-boss-life .num{font-size:72px;line-height:1;color:#f09595}.scr-boss-life .muted{font-size:24px !important}
+.scr-bar.big{width:100%;max-width:520px;height:16px}
+.scr-boss-rules{display:flex;flex-wrap:wrap;gap:8px}.scr-boss-rules .chip{font-size:18px;padding:4px 12px}
 
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
@@ -193,7 +205,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.9.0</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.10.0</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -1102,9 +1114,47 @@ function foeArtKey(x){
   return x.kind==="Boss"?"boss":"cultist";
 }
 // photos in img/foes/<key>-<n>.jpg: how many exist for each art key
-const FOE_PHOTOS={cultist:4};
+const FOE_PHOTOS={cultist:4,thug:4,undead:4,ghost:4,winged:4,fishman:4,vermin:4};
 function foePick(id,n){let h=0;const s=String(id||"");for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%n+1;}
+// specific enemies: if the name contains the word, always use these images (img/foes/<file>-<n>.jpg)
+const FOE_NAMED=[
+  {re:/keziah|strega/,file:"keziah",n:1},
+  {re:/jenkin|famigli/,file:"famiglio",n:1},
+  {re:/wilbur|whateley/,file:"wilbur",n:1},
+  {re:/cannibal/,file:"cannibale",n:1},
+  {re:/colore|colour|color/,file:"colore",n:1},
+  {re:/delapore|edward/,file:"delapore",n:1},
+  {re:/abitatore|haunter|del buio/,file:"abitatore",n:1},
+  {re:/akeley/,file:"akeley",n:1},
+  {re:/surama/,file:"surama",n:1},
+  {re:/informe|mostruosit|shapeless/,file:"informe",n:1},
+  {re:/luce|corpse.?light/,file:"luce",n:1},
+  {re:/capo zomb|zombie leader/,file:"capozombi",n:1},
+  {re:/vampir/,file:"vampiro",n:1},
+  {re:/mannar|werewolf|licantrop/,file:"mannaro",n:1},
+  {re:/sacerdot|priest/,file:"sacerdote",n:1},
+  {re:/capo (della )?setta|leader della setta|cult leader/,file:"caposetta",n:1},
+  {re:/orrore|horror/,file:"orrore",n:1},
+  {re:/grande profond|large deep/,file:"grandeprofondo",n:1},
+  {re:/pezzi|patchwork|cucit/,file:"pezzi",n:1},
+  // final encounters (wide images)
+  {re:/cthulhu/,file:"cthulhu",n:1,wide:true},
+  {re:/dagon|profondo gigante|giant deep/,file:"dagon",n:1,wide:true},
+  {re:/shoggoth|ghatanothoa/,file:"shoggoth",n:1,wide:true},
+  {re:/nitokris/,file:"nitokris",n:1,wide:true},
+  {re:/nyarlathotep/,file:"nyarlathotep",n:1,wide:true},
+  {re:/shub|niggurath|capro nero|black goat/,file:"shub",n:1,wide:true},
+  {re:/yog|sothoth|aspetto parziale/,file:"yog",n:1,wide:true},
+];
+function foePhoto(x,id){
+  const nm=(x.name||"").toLowerCase();const named=FOE_NAMED.find(e=>e.re.test(nm));
+  if(named)return {src:`img/foes/${named.file}-${foePick(id,named.n)}.jpg`,wide:!!named.wide};
+  const key=foeArtKey(x);const np=FOE_PHOTOS[key];
+  return np?{src:`img/foes/${key}-${foePick(id,np)}.jpg`,wide:false}:null;
+}
 function foeArt(x,size,id){
+  const nm=(x.name||"").toLowerCase();const named=FOE_NAMED.find(e=>e.re.test(nm));
+  if(named&&id!=null)return `<img class="foe-photo${named.wide?" wide":""}" src="img/foes/${named.file}-${foePick(id,named.n)}.jpg" alt="" style="width:${named.wide?Math.round(size*1.6):size}px">`;
   const key=foeArtKey(x);const np=FOE_PHOTOS[key];
   if(np&&id!=null)return `<img class="foe-photo" src="img/foes/${key}-${foePick(id,np)}.jpg" alt="" style="width:${size}px">`;
   const k=foeKind(x);const [bg,fg]=FOE_THEME[k];
@@ -1143,10 +1193,18 @@ function viewScreen(){
   const visited=Object.entries(S.checks||{}).map(([l,m])=>[l,Object.entries(m||{}).filter(([,v])=>v===true||+v>0).map(([n,v])=>v===true||+v===1?n:`${n}×${v}`)]).filter(([,a])=>a.length);
   const l=S.last;
   const stage=foes.length?`<section class="scr-stage card"><div class="row sb"><h2>Combattimento${c.on?` · round ${c.round||1}`:""}</h2>${c.on&&c.init?`<span class="chip dead">iniziativa ai nemici</span>`:""}</div>
-    <div class="scr-foes-row">${foes.map(([fid,x])=>{const k=foeKind(x);return `<div class="scr-foe fk-${k}">${foeArt(x,170,fid)}
+    <div class="scr-fight">${foes.filter(([,x])=>x.kind==="Boss").map(([fid,x])=>{const ph=foePhoto(x,fid);const pct=Math.round(x.n/(x.n0||x.n)*100);
+      const rules=[x.inc?"incorporeo":"",(+x.atk||1)>1?`${x.atk} attacchi per round`:"",x.dmg>1?`${x.dmg} ferite per colpo`:""].filter(Boolean);
+      return `<div class="scr-boss ${ph&&ph.wide?"wide":""}">${ph?`<img class="scr-boss-img" src="${ph.src}" alt="">`:`<div class="scr-boss-svg">${foeArt(x,260)}</div>`}
+        <div class="scr-boss-info"><span class="chip dead">boss</span><div class="scr-boss-name">${esc(x.name)}</div>
+          <div class="scr-boss-lvl">Livello <b class="num">${x.L}</b></div>
+          <div class="scr-boss-life"><span class="num">${x.n}</span><span class="muted"> / ${x.n0||x.n} Vita</span></div>
+          <div class="scr-bar big"><span style="width:${pct}%"></span></div>
+          ${rules.length?`<div class="scr-boss-rules">${rules.map(r=>`<span class="chip">${esc(r)}</span>`).join("")}</div>`:""}</div></div>`;}).join("")}
+    <div class="scr-foes-row">${foes.filter(([,x])=>x.kind!=="Boss").map(([fid,x])=>{const k=foeKind(x);return `<div class="scr-foe fk-${k}">${foeArt(x,170,fid)}
       <div class="scr-foe-name">${esc(x.name)}</div><div class="muted">L${x.L}${x.inc?" · incorporeo":""}${x.kind==="Boss"?" · boss":""}${x.dmg>1?` · ${x.dmg} ferite per colpo`:""}</div>
       <div class="scr-foe-n num">${x.n}<span class="muted"> ${x.kind==="Boss"?"Vita":x.n===1?"rimasto":"rimasti"}</span></div>
-      ${x.kind!=="Boss"?`<div class="scr-foe-pips">${Array.from({length:Math.min(x.n0||x.n,20)},(_,i)=>`<span class="${i<x.n?"on":""}"></span>`).join("")}</div>`:`<div class="scr-bar"><span style="width:${Math.round(x.n/(x.n0||x.n)*100)}%"></span></div>`}</div>`;}).join("")}</div>
+      ${x.kind!=="Boss"?`<div class="scr-foe-pips">${Array.from({length:Math.min(x.n0||x.n,20)},(_,i)=>`<span class="${i<x.n?"on":""}"></span>`).join("")}</div>`:`<div class="scr-bar"><span style="width:${Math.round(x.n/(x.n0||x.n)*100)}%"></span></div>`}</div>`;}).join("")}</div></div>
     ${as.length?`<h3>${c.flee?"Fuga: ultimo attacco":"Attacchi dei nemici"}</h3><div class="scr-atk">${(()=>{const g={};as.forEach(([k,a])=>{(g[a.tgt]=g[a.tgt]||{name:a.tname,list:[]}).list.push([k,a]);});
       return Object.entries(g).map(([t,o])=>{const ic=PARTY[t]&&PARTY[t].cls?ico(PARTY[t].cls,18):ico("helper",18);
         return `<div class="scr-atk-col"><div class="hcard"><b>${ic} ${esc(o.name)}</b></div>${o.list.map(([k,a])=>{const r=cr[k];return `<div class="row sb"><span>${esc(a.fname)}</span><span class="${r&&r.done?(/Schivato/.test(r.res)?"ok":"ko"):"muted"}">${r&&r.done?(/Schivato/.test(r.res)?"schivato":"colpito"):"…"}</span></div>`;}).join("")}</div>`;}).join("");})()}</div>`:""}
