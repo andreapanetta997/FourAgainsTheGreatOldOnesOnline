@@ -184,6 +184,8 @@ body.screen-mode{overflow:hidden}
 .scr-locnote{color:#e8c46a;font-size:17px !important;line-height:1.2;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .scr-checks .loc.here{outline:2px solid #a78bfa}
 
+.foe-photo{display:block;aspect-ratio:4/5;object-fit:cover;object-position:50% 22%;border-radius:8px;max-width:100%;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 6px 18px rgba(0,0,0,.5)}
+
 #role{font-family:var(--display);color:var(--gold);font-size:16px}
 [hidden]{display:none!important}
 </style>
@@ -191,7 +193,7 @@ body.screen-mode{overflow:hidden}
 <body>
 <header class="top">
   <div class="toprow">
-    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.8.0</span></h1>
+    <h1><svg class="logo" viewBox="0 0 100 100" width="28" height="28" aria-hidden="true"><g fill="none" stroke="#b9a3f0" stroke-linecap="round" stroke-linejoin="round"><circle cx="50" cy="50" r="44" stroke-width="3.5"/><circle cx="50" cy="50" r="37" stroke-width="1.2" stroke-dasharray="2 6"/><path stroke-width="2" d="M50 6v6M50 88v6M6 50h6M88 50h6M19 19l4 4M77 77l4 4M81 19l-4 4M23 77l-4 4"/><path stroke-width="3" d="M24 40c10-13 42-13 52 0-10 13-42 13-52 0z"/><path stroke-width="3" d="M36 54c-4 9 4 13 0 22M50 57c0 9 6 12 3 21M64 54c4 9-4 13 0 22"/></g><circle cx="50" cy="40" r="6.5" fill="#d6b25e"/><circle cx="50" cy="40" r="2.6" fill="#15121c"/></svg>Quattro contro i Grandi Antichi <span class="muted" style="font-family:var(--mono);font-size:11px">v2.9.0</span></h1>
     <span class="row"><span id="role"></span><span id="conn" class="chip">…</span><button id="fullbtn" class="sm" data-a="scr" data-f="full" hidden>Schermo intero</button><button id="logout" class="sm" data-a="logout" hidden>Esci</button><button id="newgame" class="sm danger" data-a="newGame" hidden>Chiudi e ricomincia</button></span>
   </div>
   <div class="stats" id="stats"></div>
@@ -1099,7 +1101,12 @@ function foeArtKey(x){
   if(/criminal|gangster|teppist|delinquent|bandit|uomin|guard|poliziott|scagnozz|sicari|contrabband/.test(n))return "thug";
   return x.kind==="Boss"?"boss":"cultist";
 }
-function foeArt(x,size){
+// photos in img/foes/<key>-<n>.jpg: how many exist for each art key
+const FOE_PHOTOS={cultist:4};
+function foePick(id,n){let h=0;const s=String(id||"");for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%n+1;}
+function foeArt(x,size,id){
+  const key=foeArtKey(x);const np=FOE_PHOTOS[key];
+  if(np&&id!=null)return `<img class="foe-photo" src="img/foes/${key}-${foePick(id,np)}.jpg" alt="" style="width:${size}px">`;
   const k=foeKind(x);const [bg,fg]=FOE_THEME[k];
   return `<svg viewBox="0 0 120 120" width="${size}" height="${size}" style="--a-fill:${bg};--a-eye:${fg}" fill="none" stroke="${fg}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${FOE_ART[foeArtKey(x)]}</svg>`;
 }
@@ -1136,7 +1143,7 @@ function viewScreen(){
   const visited=Object.entries(S.checks||{}).map(([l,m])=>[l,Object.entries(m||{}).filter(([,v])=>v===true||+v>0).map(([n,v])=>v===true||+v===1?n:`${n}×${v}`)]).filter(([,a])=>a.length);
   const l=S.last;
   const stage=foes.length?`<section class="scr-stage card"><div class="row sb"><h2>Combattimento${c.on?` · round ${c.round||1}`:""}</h2>${c.on&&c.init?`<span class="chip dead">iniziativa ai nemici</span>`:""}</div>
-    <div class="scr-foes-row">${foes.map(([,x])=>{const k=foeKind(x);return `<div class="scr-foe fk-${k}">${foeArt(x,150)}
+    <div class="scr-foes-row">${foes.map(([fid,x])=>{const k=foeKind(x);return `<div class="scr-foe fk-${k}">${foeArt(x,170,fid)}
       <div class="scr-foe-name">${esc(x.name)}</div><div class="muted">L${x.L}${x.inc?" · incorporeo":""}${x.kind==="Boss"?" · boss":""}${x.dmg>1?` · ${x.dmg} ferite per colpo`:""}</div>
       <div class="scr-foe-n num">${x.n}<span class="muted"> ${x.kind==="Boss"?"Vita":x.n===1?"rimasto":"rimasti"}</span></div>
       ${x.kind!=="Boss"?`<div class="scr-foe-pips">${Array.from({length:Math.min(x.n0||x.n,20)},(_,i)=>`<span class="${i<x.n?"on":""}"></span>`).join("")}</div>`:`<div class="scr-bar"><span style="width:${Math.round(x.n/(x.n0||x.n)*100)}%"></span></div>`}</div>`;}).join("")}</div>
